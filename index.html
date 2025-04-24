@@ -24,55 +24,9 @@
 
 
   <!-- Elementos para la cámara y canvas -->
-  <video id="webcam" autoplay playsinline></video>
-  <canvas id="output_canvas"></canvas>
-
   <video id="webcam" autoplay muted playsinline></video>
   <canvas id="webgl"></canvas>
 
-  <!-- Overlay para la pantalla de bienvenida -->
-  <div id="welcomeScreen" class="overlay">
-    <div class="text">
-      <p>Toda gran historia comienza en silencio...</p>
-      <p>Durante años, avanzaste en medio del ruido…<br>
-        Hoy es momento de escuchar lo más profundo de ti.</p>
-    </div>
-    <button id="startButton">Comenzar</button>
-  </div>
-
-  <!-- Overlay para las instrucciones -->
-  <div id="instructionScreen" class="overlay hidden">
-    <div class="text">
-      <p>Mírate.<br>
-        Detrás de esta mirada hay sacrificios, sueños, coraje.<br>
-        Hoy no celebramos lo que hiciste.<br>
-        Celebramos lo que eres.</p>
-    </div>
-  </div>
-
-  <!-- Overlay de carga -->
-  <!-- <div id="loadingScreen" class="overlay hidden">
-    <div class="text">
-      <p>Analizando tu energía interior...</p>
-    </div>
-  </div> -->
-
-
-  <!-- Modal para ingresar el mensaje -->
-  <div id="signatureModal" class="modal hidden">
-    <div class="modal-content">
-      <p>¿Qué descubriste en tu camino que quieres que otros recuerden?</p>
-      <p>
-        Escribe un mensaje para ti, para alguien que empieza, o para el mundo.<br>
-        Un recuerdo. Una promesa. Una verdad.
-      </p>
-      <textarea id="signatureInput" rows="4" placeholder="Escribe tu mensaje aquí..."></textarea>
-      <div class="modal-buttons">
-        <button id="signatureSubmit">Enviar</button>
-        <button id="signatureClose">Cerrar</button>
-      </div>
-    </div>
-  </div>
 
   <!-- Elemento opcional (para demos o mensajes extra) -->
   <div id="demos"></div>
