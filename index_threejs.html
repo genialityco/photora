@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Flujo de Bienvenida y Pose</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+
+<body>
+  <video id="globalBackgroundVideo" autoplay muted loop>
+    <source src="/LA-NOCHE-DE-LAS-ESTRELLA-02.mp4" type="video/mp4">
+    Tu navegador no soporta video en HTML5.
+  </video>
+
+  <!-- Contenedor para Three.js -->
+  <div id="three-container">
+    <!-- Botón "Deja tu huella" superpuesto -->
+    <button id="signatureButton" class="overlayButton">Deja tu huella</button>
+  </div>
+
+  <!-- Botón para controlar la cámara (puede estar oculto inicialmente o activo según tu flujo) -->
+  <button id="webcamButton">■</button>
+
+
+  <!-- Elementos para la cámara y canvas -->
+  <video id="webcam" autoplay muted playsinline></video>
+  <canvas id="webgl"></canvas>
+
+
+  <!-- Elemento opcional (para demos o mensajes extra) -->
+  <div id="demos"></div>
+
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>

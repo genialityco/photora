@@ -1,38 +1,41 @@
-<!doctype html>
-<html lang="es">
+<!-- Copyright 2023 The MediaPipe Authors.
 
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License. -->
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Flujo de Bienvenida y Pose</title>
+  <meta charset="utf-8">
+  <meta http-equiv="Cache-control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Face Landmarker</title>
+
+  <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
   <link rel="stylesheet" href="/src/style.css" />
+
 </head>
-
 <body>
-  <video id="globalBackgroundVideo" autoplay muted loop>
-    <source src="/LA-NOCHE-DE-LAS-ESTRELLA-02.mp4" type="video/mp4">
-    Tu navegador no soporta video en HTML5.
-  </video>
-
-  <!-- Contenedor para Three.js -->
-  <div id="three-container">
-    <!-- Botón "Deja tu huella" superpuesto -->
-    <button id="signatureButton" class="overlayButton">Deja tu huella</button>
-  </div>
-
-  <!-- Botón para controlar la cámara (puede estar oculto inicialmente o activo según tu flujo) -->
-  <button id="webcamButton">■</button>
-
-
-  <!-- Elementos para la cámara y canvas -->
-  <video id="webcam" autoplay muted playsinline></video>
-  <canvas id="webgl"></canvas>
-
-
-  <!-- Elemento opcional (para demos o mensajes extra) -->
-  <div id="demos"></div>
-
-
+  <section id="demos" class="invisible">
+    <div id="liveView" class="videoView">
+      <div style="position: relative;">
+        <video id="webcam" style="position: abso" autoplay playsinline></video>
+        <canvas class="output_canvas" id="output_canvas" style="border:1px solid red;position: absolute; left: 0px; top: 0px;"></canvas>
+      </div>
+    </div>
+    <div class="blend-shapes">
+      <ul class="blend-shapes-list" id="video-blend-shapes"></ul>
+    </div>
+  </section>
   <script type="module" src="/src/main.ts"></script>
 </body>
-
 </html>

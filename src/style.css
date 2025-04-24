@@ -1,6 +1,34 @@
+/* Copyright 2023 The MediaPipe Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License. */
+
+/* Copyright 2022 The MediaPipe Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License. */
+
 @use "@material";
 body {
-  font-family: roboto;
+  font-family: helvetica, arial, sans-serif;
   margin: 2em;
   color: #3d3d3d;
   --mdc-theme-primary: #007f8b;
@@ -8,6 +36,8 @@ body {
 }
 
 h1 {
+  font-style: italic;
+  color: #ff6f00;
   color: #007f8b;
 }
 
@@ -25,7 +55,6 @@ video {
   transform: rotateY(180deg);
   -webkit-transform: rotateY(180deg);
   -moz-transform: rotateY(180deg);
-  z-index:0;
 }
 
 section {
@@ -52,7 +81,8 @@ footer {
 }
 
 .videoView,
-.detectOnClick {
+.detectOnClick,
+.blend-shapes {
   position: relative;
   float: left;
   width: 48%;
@@ -79,18 +109,11 @@ footer {
   position: absolute;
 }
 
-.webgl {
-  z-index: 99999;
+.canvas {
+  z-index: 1;
   position: absolute;
   pointer-events: none;
 }
-
-#webcam {
-  position: relative;
-  z-index: 0;
-}
-
-
 
 .output_canvas {
   transform: rotateY(180deg);
@@ -106,194 +129,23 @@ footer {
   width: 100%;
 }
 
-/* Contenedor para la escena de Three.js */
-#three-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-}
-
-/* Overlay para el video y el botón */
-#overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 2;
-  pointer-events: none; /* Permite que el canvas reciba eventos si es necesario */
-}
-
-/* Posición del video en la esquina superior izquierda */
-#webcam {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  width: 240px;  /* Ajusta el tamaño según necesites */
-  height: auto;
-  z-index: 2;
-  pointer-events: auto;
-}
-
-/* Posición del botón superpuesto (por ejemplo, esquina superior derecha) */
-#webcamButton {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 3;
-  pointer-events: auto;
-}
-
-#globalBackgroundVideo {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: -1;
-  transform: scaleX(1);
-
-}
-
-/* Canvas para salida con la transformación requerida */
-.output_canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-  transform: rotateY(180deg);
-}
-
-/* Estilos básicos para overlays */
-.overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  background-blend-mode: overlay;
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  font-family: Arial, sans-serif;
-  z-index: 10;
-}
-
-
-.hidden {
-  display: none;
-}
-
-.overlay .text p {
-  font-size: 2rem;
-  margin: 10px 0;
-}
-
-#startButton {
-  font-size: 1.5rem;
-  padding: 10px 20px;
-  margin-top: 20px;
-  cursor: pointer;
-}
-
-/* Botón superpuesto en la escena */
-.overlayButton {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  z-index: 1000; /* Sobre la escena */
-  font-size: 1.2rem;
-  padding: 10px 20px;
-  background-color: #1e90ff;
-  color: #fff;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-/* Estilos para el modal */
-.modal {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8); /* Fondo semitransparente */
+.blend-shapes-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  z-index: 99999  !important;
+  height: 20px;
 }
 
-.modal-content {
-  background: #fff;
-  padding: 20px;
-  width: 90%;
-  max-width: 500px;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.modal-content p {
-  margin-bottom: 1rem;
-  font-size: 1.1rem;
-  color: #333;
-}
-
-.modal-content textarea {
-  width: 100%;
-  font-size: 1rem;
-}
-
-.modal-buttons button {
-  margin: 5px;
-  padding: 10px 15px;
-  font-size: 1rem;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-#signatureSubmit {
-  background-color: #1e90ff;
-  color: #fff;
-}
-
-#signatureClose {
-  background-color: #aaa;
-  color: #fff;
-}
-
-/* Clase para ocultar elementos */
-.hidden {
-  display: none;
-}
-
-/* Ejemplo de estilo para la pantalla de carga */
-.overlay-loading {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.85);
-  color: #fff;
+.blend-shapes-label {
   display: flex;
+  width: 120px;
+  justify-content: flex-end;
   align-items: center;
-  justify-content: center;
-  z-index: 9999;
+  margin-right: 4px;
 }
 
-.hidden {
-  display: none;
+.blend-shapes-value {
+  display: flex;
+  height: 16px;
+  align-items: center;
+  background-color: #007f8b;
 }
