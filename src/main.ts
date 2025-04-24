@@ -1,327 +1,145 @@
-// Copyright 2023 The MediaPipe Authors.
-
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-
-//      http://www.apache.org/licenses/LICENSE-2.0
-
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
 
-const { SelfieSegmenter, FilesetResolver, FaceLandmarker, DrawingUtils } = vision;
-const demosSection = document.getElementById("demos");
-const imageBlendShapes = document.getElementById("image-blend-shapes");
-const videoBlendShapes = document.getElementById("video-blend-shapes");
+const { FilesetResolver, FaceLandmarker, PoseLandmarker } = vision;
 
-let faceLandmarker;
-let runningMode: "IMAGE" | "VIDEO" = "IMAGE";
-let webcamRunning: Boolean = false;
+// DOM elements
+const demosSection  = document.getElementById("demos")! as HTMLElement;
+const video         = document.getElementById("webcam")         as HTMLVideoElement;
+const canvasElement = document.getElementById("output_canvas") as HTMLCanvasElement;
+const canvasCtx     = canvasElement.getContext("2d")!;
+
+// State
+let faceLandmarker: FaceLandmarker;
+let poseLandmarker: PoseLandmarker;
+let webcamRunning = false;
 const videoWidth = 480;
 
-// Before we can use HandLandmarker class we must wait for it to finish
-// loading. Machine Learning models can be large and take a moment to
-// get everything needed to run.
-async function createFaceLandmarker() {
-  const filesetResolver = await FilesetResolver.forVisionTasks(
+// Preload overlay images
+const crownImage = Object.assign(new Image(), { src: "/assets/CORONA.png" });
+const malumaLogo = Object.assign(new Image(), { src: "/assets/LOGO-MALUMA.png" });
+const dogLeft    = Object.assign(new Image(), { src: "/assets/PERRO 201.png" });
+const dogRight   = Object.assign(new Image(), { src: "/assets/PERRO 303.png" });
+const m01        = Object.assign(new Image(), { src: "/assets/M 01.png" });
+const dog101     = Object.assign(new Image(), { src: "/assets/PERRO 101.png" });
+const textDorado = Object.assign(new Image(), { src: "/assets/TEXTO-DORADO.png" });
+
+// Utility to draw an image centered at (cx, cy) with given width, preserving aspect
+function drawOverlayImage(img: HTMLImageElement, cx: number, cy: number, w: number) {
+  if (!img.complete) return;
+  const h = w * (img.naturalHeight / img.naturalWidth);
+  canvasCtx.drawImage(img, cx - w/2, cy - h/2, w, h);
+}
+
+async function init() {
+  const resolver = await FilesetResolver.forVisionTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
   );
-  faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
+
+  // FaceLandmarker
+  faceLandmarker = await FaceLandmarker.createFromOptions(resolver, {
     baseOptions: {
-      modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
-      delegate: "GPU"
+      modelAssetPath:
+        "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+      delegate: "GPU",
     },
-    outputFaceBlendshapes: true,
-    runningMode,
-    numFaces: 1
+    runningMode: "VIDEO",
+    outputFaceBlendshapes: false,
+    numFaces: 1,
   });
+
+  // PoseLandmarker (lite)
+  poseLandmarker = await PoseLandmarker.createFromOptions(resolver, {
+    baseOptions: {
+      modelAssetPath:
+        "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+      delegate: "GPU",
+    },
+    runningMode: "VIDEO",
+    numPoses: 1,
+    outputSegmentation: false,
+  });
+
+  // Show UI and start camera
   demosSection.classList.remove("invisible");
-}
-createFaceLandmarker();
-
-/********************************************************************
-// Demo 1: Grab a bunch of images from the page and detection them
-// upon click.
-********************************************************************/
-
-// In this demo, we have put all our clickable images in divs with the
-// CSS class 'detectionOnClick'. Lets get all the elements that have
-// this class.
-const imageContainers = document.getElementsByClassName("detectOnClick");
-
-// Now let's go through all of these and add a click event listener.
-for (let imageContainer of imageContainers) {
-  // Add event listener to the child element whichis the img element.
-  imageContainer.children[0].addEventListener("click", handleClick);
+  enableCam();
 }
 
-// When an image is clicked, let's detect it and display results!
-async function handleClick(event) {
-  if (!faceLandmarker) {
-    console.log("Wait for faceLandmarker to load before clicking!");
-    return;
-  }
+init();
 
-  if (runningMode === "VIDEO") {
-    runningMode = "IMAGE";
-    await faceLandmarker.setOptions({ runningMode });
-  }
-  // Remove all landmarks drawed before
-  const allCanvas = event.target.parentNode.getElementsByClassName("canvas");
-  for (var i = allCanvas.length - 1; i >= 0; i--) {
-    const n = allCanvas[i];
-    n.parentNode.removeChild(n);
-  }
-
-  // We can call faceLandmarker.detect as many times as we like with
-  // different image data each time. This returns a promise
-  // which we wait to complete and then call a function to
-  // print out the results of the prediction.
-  const faceLandmarkerResult = faceLandmarker.detect(event.target);
-  const canvas = document.createElement("canvas") as HTMLCanvasElement;
-  canvas.setAttribute("class", "canvas");
-  canvas.setAttribute("width", event.target.naturalWidth + "px");
-  canvas.setAttribute("height", event.target.naturalHeight + "px");
-  canvas.style.left = "0px";
-  canvas.style.top = "0px";
-  canvas.style.width = `${event.target.width}px`;
-  canvas.style.height = `${event.target.height}px`;
-
-  event.target.parentNode.appendChild(canvas);
-  const ctx = canvas.getContext("2d");
-  const drawingUtils = new DrawingUtils(ctx);
-  for (const landmarks of faceLandmarkerResult.faceLandmarks) {
-    drawingUtils.drawConnectors(
-      landmarks,
-      FaceLandmarker.FACE_LANDMARKS_TESSELATION,
-      { color: "#C0C0C070", lineWidth: 1 }
-    );
-    drawingUtils.drawConnectors(
-      landmarks,
-      FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
-      { color: "#FF3030" }
-    );
-    drawingUtils.drawConnectors(
-      landmarks,
-      FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW,
-      { color: "#FF3030" }
-    );
-    drawingUtils.drawConnectors(
-      landmarks,
-      FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
-      { color: "#30FF30" }
-    );
-    drawingUtils.drawConnectors(
-      landmarks,
-      FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW,
-      { color: "#30FF30" }
-    );
-    drawingUtils.drawConnectors(
-      landmarks,
-      FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
-      { color: "#E0E0E0" }
-    );
-    drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_LIPS, {
-      color: "#E0E0E0"
-    });
-    drawingUtils.drawConnectors(
-      landmarks,
-      FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS,
-      { color: "#FF3030" }
-    );
-    drawingUtils.drawConnectors(
-      landmarks,
-      FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS,
-      { color: "#30FF30" }
-    );
-  }
-  drawBlendShapes(imageBlendShapes, faceLandmarkerResult.faceBlendshapes);
-}
-
-/********************************************************************
-// Demo 2: Continuously grab image from webcam stream and detect it.
-********************************************************************/
-
-const video = document.getElementById("webcam") as HTMLVideoElement;
-const canvasElement = document.getElementById(
-  "output_canvas"
-) as HTMLCanvasElement;
-
-const canvasCtx = canvasElement.getContext("2d");
-
-// Load the crown image
-const crownImage = new Image();
-crownImage.src = "/assets/CORONA.png"; // Replace with the correct path to your image
-crownImage.onload = () => {
-  console.log("Crown image loaded");
-};
-
-// Check if webcam access is supported.
-function hasGetUserMedia() {
-  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-}
-
-// Enable the live webcam view and start detection.
 function enableCam() {
-  if (!faceLandmarker) {
-    console.log("Wait! faceLandmarker not loaded yet.");
-    return;
-  }
-
-  if (webcamRunning === true) {
-    webcamRunning = false;
-  } else {
-    webcamRunning = true;
-  }
-
-  // getUsermedia parameters.
-  const constraints = {
-    video: true
-  };
-
-  // Activate the webcam stream.
-  navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
+  if (webcamRunning) return;
+  webcamRunning = true;
+  navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
     video.srcObject = stream;
-    video.addEventListener("loadeddata", predictWebcam);
+    video.addEventListener("loadeddata", predict);
   });
 }
-
-// Automatically enable webcam on load, after faceLandmarker is ready
-async function waitForFaceLandmarkerAndEnableCam() {
-  while (!faceLandmarker) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  // Always start webcam on load
-  if (!webcamRunning) {
-    enableCam();
-  }
-}
-waitForFaceLandmarkerAndEnableCam();
 
 let lastVideoTime = -1;
-let results = undefined;
-const drawingUtils = new DrawingUtils(canvasCtx);
-async function predictWebcam() {
-  const radio = video.videoHeight / video.videoWidth;
-  video.style.width = videoWidth + "px";
-  video.style.height = videoWidth * radio + "px";
-  canvasElement.style.width = videoWidth + "px";
-  canvasElement.style.height = videoWidth * radio + "px";
-  canvasElement.width = video.videoWidth;
+async function predict() {
+  // Resize to square based on height
+  const ratio = video.videoHeight / video.videoWidth;
+  video.style.width  = `${videoWidth}px`;
+  video.style.height = `${videoWidth * ratio}px`;
+
+  canvasElement.width  = video.videoWidth;
   canvasElement.height = video.videoHeight;
-  // Now let's start detecting the stream.
-  if (runningMode === "IMAGE") {
-    runningMode = "VIDEO";
-    await faceLandmarker.setOptions({ runningMode: runningMode });
-  }
-  let startTimeMs = performance.now();
-  if (lastVideoTime !== video.currentTime) {
+  canvasElement.style.width  = video.style.width;
+  canvasElement.style.height = video.style.height;
+
+  if (video.currentTime !== lastVideoTime) {
     lastVideoTime = video.currentTime;
-    results = faceLandmarker.detectForVideo(video, startTimeMs);
   }
+
+  const now     = performance.now();
+  const faceRes = await faceLandmarker.detectForVideo(video, now);
+  const poseRes = await poseLandmarker.detectForVideo(video, now);
+
   canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-  if (results.faceLandmarks) {
-    for (const landmarks of results.faceLandmarks) {
-      drawingUtils.drawConnectors(
-        landmarks,
-        FaceLandmarker.FACE_LANDMARKS_TESSELATION,
-        { color: "#C0C0C070", lineWidth: 1 }
-      );
-      drawingUtils.drawConnectors(
-        landmarks,
-        FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
-        { color: "#FF3030" }
-      );
-      drawingUtils.drawConnectors(
-        landmarks,
-        FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW,
-        { color: "#FF3030" }
-      );
-      drawingUtils.drawConnectors(
-        landmarks,
-        FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
-        { color: "#30FF30" }
-      );
-      drawingUtils.drawConnectors(
-        landmarks,
-        FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW,
-        { color: "#30FF30" }
-      );
-      drawingUtils.drawConnectors(
-        landmarks,
-        FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
-        { color: "#E0E0E0" }
-      );
-      drawingUtils.drawConnectors(
-        landmarks,
-        FaceLandmarker.FACE_LANDMARKS_LIPS,
-        { color: "#E0E0E0" }
-      );
-      drawingUtils.drawConnectors(
-        landmarks,
-        FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS,
-        { color: "#FF3030" }
-      );
-      drawingUtils.drawConnectors(
-        landmarks,
-        FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS,
-        { color: "#30FF30" }
-      );
 
-      // Use landmark 10 for the upper forehead/hairline
-      const upperForehead = landmarks[10];
-      const faceWidth = Math.abs(landmarks[234].x - landmarks[454].x); // Always positive
-
-      // Calculate the crown width based on the face width
-      const crownWidth = faceWidth * canvasElement.width * 1.5;
-      const crownHeight = crownWidth * (crownImage.height / crownImage.width);
-
-      // Position the crown above the upper forehead
-      const crownX = upperForehead.x * canvasElement.width - crownWidth / 2;
-      const crownY = upperForehead.y * canvasElement.height - crownHeight * 1.1; // Increase multiplier for higher placement
-
-      canvasCtx.drawImage(
-        crownImage,
-        crownX,
-        crownY,
-        crownWidth,
-        crownHeight
-      );
-    }
-  }
-  drawBlendShapes(videoBlendShapes, results.faceBlendshapes);
-
-  // Call this function again to keep predicting when the browser is ready.
-  if (webcamRunning === true) {
-    window.requestAnimationFrame(predictWebcam);
-  }
-}
-
-function drawBlendShapes(el: HTMLElement, blendShapes: any[]) {
-  if (!blendShapes.length) {
-    return;
+  // Draw crown + Maluma logo using face landmarks
+  if (faceRes.faceLandmarks?.length) {
+    const lm        = faceRes.faceLandmarks[0];
+    const f         = lm[10];
+    const wNorm     = Math.abs(lm[234].x - lm[454].x);
+    const faceW     = wNorm * canvasElement.width;
+    const crownW    = faceW * 1.5;
+    const crownH    = crownW * (crownImage.naturalHeight / crownImage.naturalWidth);
+    const crownX    = f.x * canvasElement.width - crownW/2;
+    const crownY    = f.y * canvasElement.height - crownH*1.1;
+    canvasCtx.drawImage(crownImage, crownX, crownY, crownW, crownH);
+    drawOverlayImage(malumaLogo, crownX + crownW/2, crownY - crownH*0.6, crownW);
   }
 
-  console.log(blendShapes[0]);
-  
-  let htmlMaker = "";
-  blendShapes[0].categories.map((shape) => {
-    htmlMaker += `
-      <li class="blend-shapes-item">
-        <span class="blend-shapes-label">${
-          shape.displayName || shape.categoryName
-        }</span>
-        <span class="blend-shapes-value" style="width: calc(${
-          +shape.score * 100
-        }% - 120px)">${(+shape.score).toFixed(4)}</span>
-      </li>
-    `;
-  });
+  // Debug: inspect poseRes to see its shape
+  console.log("poseRes →", poseRes);
 
-  el.innerHTML = htmlMaker;
+  // Support both camelCase and snake_case
+  const rawPoseLandmarks = (poseRes as any).landmarks ?? (poseRes as any).landmarks;
+
+  if (Array.isArray(rawPoseLandmarks) && rawPoseLandmarks.length > 0) {
+    const pl      = rawPoseLandmarks[0];
+    const lsX     = pl[11].x * canvasElement.width;
+    const lsY     = pl[11].y * canvasElement.height;
+    const rsX     = pl[12].x * canvasElement.width;
+    const rsY     = pl[12].y * canvasElement.height;
+    const torsoW  = Math.hypot(rsX - lsX, rsY - lsY);
+
+    // Dogs on shoulders
+    drawOverlayImage(dogLeft,  lsX, lsY,       torsoW * 0.6);
+    drawOverlayImage(dogRight, rsX, rsY,      torsoW * 0.6);
+    // Beneath dogs
+    drawOverlayImage(m01,      lsX, lsY + torsoW,   torsoW * 0.5);
+    drawOverlayImage(dog101,   rsX, rsY + torsoW,   torsoW * 0.5);
+    // Text on chest (mid-shoulder + offset)
+    const chestX = (lsX + rsX) / 2;
+    const chestY = (lsY + rsY) / 2 + torsoW * 0.2;
+    drawOverlayImage(textDorado, chestX, chestY, torsoW * 1.2);
+  } else {
+    console.warn("❗ No se detectaron pose landmarks:", rawPoseLandmarks);
+  }
+
+  if (webcamRunning) {
+    requestAnimationFrame(predict);
+  }
 }
