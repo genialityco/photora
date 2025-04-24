@@ -25,6 +25,7 @@ video {
   transform: rotateY(180deg);
   -webkit-transform: rotateY(180deg);
   -moz-transform: rotateY(180deg);
+  z-index:0;
 }
 
 section {
@@ -78,8 +79,8 @@ footer {
   position: absolute;
 }
 
-.canvas {
-  z-index: 1;
+.webgl {
+  z-index: 99999;
   position: absolute;
   pointer-events: none;
 }

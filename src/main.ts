@@ -85,6 +85,30 @@ const glowTexture = createGlowTexture();
 const canvasElement = document.getElementById("webgl") as HTMLCanvasElement;
 const hasGetUserMedia = () => !!navigator.mediaDevices?.getUserMedia;
 
+// --- Add this block to style video and canvas for overlap ---
+const styleForOverlap = () => {
+  // Ensure the canvas and video are absolutely positioned and overlap
+  canvasElement.style.position = "absolute";
+  canvasElement.style.top = "0";
+  canvasElement.style.left = "0";
+  canvasElement.style.width = "100vw";
+  canvasElement.style.height = "100vh";
+  canvasElement.style.zIndex = "2";
+
+  video.style.position = "absolute";
+  video.style.top = "0";
+  video.style.left = "0";
+  video.style.width = "100vw";
+  video.style.height = "100vh";
+  video.style.objectFit = "cover";
+  video.style.zIndex = "1"; // Video above canvas
+
+  // Optionally, pointer events none so video doesn't block UI
+  video.style.pointerEvents = "none";
+};
+styleForOverlap();
+// --- End of block ---
+
 // Control de overlays
 const welcomeScreen = document.getElementById("welcomeScreen") as HTMLDivElement;
 const instructionScreen = document.getElementById("instructionScreen") as HTMLDivElement;
@@ -122,12 +146,6 @@ async function enableWebcam() {
   const stream = await navigator.mediaDevices.getUserMedia(constraints);
   video.srcObject = stream;
 
-  // Style the video element to display in the corner
-
-  video.style.zIndex = "10"; // Ensure it appears above the canvas
-  //video.style.border = "2px solid white";
-  //video.style.borderRadius = "8px";
-  //video.style.boxShadow = "0 0 10px rgba(0, 0, 0, 0.5)";
 
   // Wait for the video to load metadata before playing
   await new Promise<void>((resolve) => {
@@ -180,7 +198,8 @@ async function predictWebcam() {
         for (let i = 0; i < smoothedLandmarks.length; i++) {
           const point = smoothedLandmarks[i];
           const i3 = i * 3;
-          basePositions[i3 + 0] = (point.x - 0.5) * 2 * 100; // Scale and center
+          // Invert X to match video direction
+          basePositions[i3 + 0] = ((1 - point.x) - 0.5) * 2 * 100; // <-- X is flipped here
           basePositions[i3 + 1] = -(point.y - 0.5) * 2 * 100; // Flip Y and scale
           basePositions[i3 + 2] = -point.z * 100; // Scale Z
         }
@@ -210,7 +229,7 @@ async function init() {
 
   const canvas = document.getElementById("webgl") as HTMLCanvasElement;
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setClearColor(0x000000, 0.8);
+  renderer.setClearColor(0x000000, 0); // <-- Set alpha to 0 for full transparency
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
 
@@ -235,8 +254,10 @@ async function init() {
   await initPoseLandmarker();
   enableWebcam();
 
-  initStreams();
-  scene.add(streamPoints);
+  //initStreams();
+  if (streamPoints && streamPoints instanceof THREE.Object3D) {
+    scene.add(streamPoints);
+  }
 
   animateaura();
 }

@@ -47,9 +47,10 @@ export function updateEmitters(smoothedLandmarks: any[]) {
   for (let i = 0; i < smoothedLandmarks.length; i++) {
     const point = smoothedLandmarks[i];
     const i3 = i * 3;
-    emitterPositions[i3 + 0] = (point.x - 0.5) * 2 * 100; // Scale and center
-    emitterPositions[i3 + 1] = -(point.y - 0.5) * 2 * 100; // Flip Y and scale
-    emitterPositions[i3 + 2] = -point.z * 100; // Scale Z
+    // Invert X to match video direction
+    emitterPositions[i3 + 0] = ((1 - point.x) - 0.5) * 2 * 100;
+    emitterPositions[i3 + 1] = -(point.y - 0.5) * 2 * 100;
+    emitterPositions[i3 + 2] = -point.z * 100;
 
     // Add velocity for dynamic dispersion
     emitterVelocities[i3 + 0] += (Math.random() - 0.5) * 0.1;
