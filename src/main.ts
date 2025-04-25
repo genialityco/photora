@@ -107,8 +107,8 @@ async function predict() {
   const segResult = await segmenter.segmentForVideo(video, segNow);
 
   const mask = segResult.categoryMask;
-  const width = mask.width;
-  const height = mask.height;
+  // const width = mask.width;
+  // const height = mask.height;
   const maskData = mask.getAsUint8Array(); // 0 = background, 15 = person, etc.
 
   // Draw video frame to canvas
@@ -123,16 +123,8 @@ async function predict() {
       frame.data[j] = 255;     // R
       frame.data[j + 1] = 255; // G
       frame.data[j + 2] = 255; // B
-
-      //frame.data[j + 3] = 1; // Alpha channel (transparency)
+      // frame.data[j + 3] = 1; // Alpha channel (transparency)
     }
-
-    // if (segValue === 0) {
-    //   // background: set to white
-    //   frame.data[j] = 255;     // R
-    //   frame.data[j + 1] = 255; // G
-    //   frame.data[j + 2] = 255; // B
-    // }
   }
   canvasCtx.putImageData(frame, 0, 0);
 

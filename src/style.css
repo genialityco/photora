@@ -76,6 +76,7 @@ body {
   -webkit-transform: translate(-50%, -50%) rotateY(180deg);
   -moz-transform: translate(-50%, -50%) rotateY(180deg);
   z-index: 1;
+  background-color: transparent !important;
 }
 
 /* 4) Tus blend-shapes encima, con mayor z-index */
