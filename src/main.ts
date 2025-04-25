@@ -234,7 +234,7 @@ async function predict() {
     const leftEarY = leftEar.y * video.videoHeight + bleedingArea;
     drawOverlayImage(
       dogLeft,
-      leftEarX - faceW * 1,
+      leftEarX - faceW * 0.75,
       leftEarY + faceW * 0.25,
       dogLeft.naturalWidth * 0.25 // Reduce size to 25%
     );
@@ -245,7 +245,7 @@ async function predict() {
     const rightEarY = rightEar.y * video.videoHeight + bleedingArea;
     drawOverlayImage(
       dogRight,
-      rightEarX + faceW * 1,
+      rightEarX + faceW * 0.75,
       rightEarY + faceW * 0.25,
       dogRight.naturalWidth * 0.25 // Reduce size to 25%
     );
