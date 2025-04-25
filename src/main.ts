@@ -1,6 +1,6 @@
 import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
-
-const { ImageSegmenter, FilesetResolver, FaceLandmarker, PoseLandmarker } = vision;
+// @ts-ignore: TypeScript cannot resolve the module from the CDN
+import { ImageSegmenter, FilesetResolver, FaceLandmarker, PoseLandmarker } from '@mediapipe/tasks-vision';
 
 // DOM elements
 const demosSection  = document.getElementById("demos")! as HTMLElement;
@@ -176,7 +176,6 @@ async function predict() {
     const lsY     = pl[11].y * canvasElement.height;
     const rsX     = pl[12].x * canvasElement.width;
     const rsY     = pl[12].y * canvasElement.height;
-    const torsoW  = Math.hypot(rsX - lsX, rsY - lsY);
 
     // Dogs on shoulders
     //drawOverlayImage(dogLeft,  lsX, lsY,       torsoW * 0.6);
