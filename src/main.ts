@@ -1,6 +1,6 @@
 import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
 
-const { ImageSegmenter ,FilesetResolver, FaceLandmarker, PoseLandmarker } = vision;
+const { ImageSegmenter, FilesetResolver, FaceLandmarker, PoseLandmarker } = vision;
 
 // DOM elements
 const demosSection  = document.getElementById("demos")! as HTMLElement;
@@ -9,9 +9,9 @@ const canvasElement = document.getElementById("output_canvas") as HTMLCanvasElem
 const canvasCtx     = canvasElement.getContext("2d")!;
 
 // State
-let faceLandmarker: FaceLandmarker;
-let poseLandmarker: PoseLandmarker;
-let segmenter:ImageSegmenter;
+let faceLandmarker: typeof FaceLandmarker;
+let poseLandmarker: typeof PoseLandmarker;
+let segmenter: typeof ImageSegmenter;
 let webcamRunning = false;
 const videoWidth = 480;
 
@@ -20,8 +20,6 @@ const crownImage = Object.assign(new Image(), { src: "/assets/CORONA.png" });
 const malumaLogo = Object.assign(new Image(), { src: "/assets/LOGO-MALUMA.png" });
 const dogLeft    = Object.assign(new Image(), { src: "/assets/PERRO 201.png" });
 const dogRight   = Object.assign(new Image(), { src: "/assets/PERRO 303.png" });
-const m01        = Object.assign(new Image(), { src: "/assets/M 01.png" });
-const dog101     = Object.assign(new Image(), { src: "/assets/PERRO 101.png" });
 const textDorado = Object.assign(new Image(), { src: "/assets/TEXTO-DORADO.png" });
 
 // Utility to draw an image centered at (cx, cy) with given width, preserving aspect
@@ -107,8 +105,6 @@ async function predict() {
   const segResult = await segmenter.segmentForVideo(video, segNow);
 
   const mask = segResult.categoryMask;
-  // const width = mask.width;
-  // const height = mask.height;
   const maskData = mask.getAsUint8Array(); // 0 = background, 15 = person, etc.
 
   // Draw video frame to canvas
@@ -189,9 +185,6 @@ async function predict() {
     //drawOverlayImage(m01,      lsX, lsY + torsoW,   torsoW * 0.5);
     //drawOverlayImage(dog101,   rsX, rsY + torsoW,   torsoW * 0.5);
     // Text on chest (mid-shoulder + offset)
-    const chestX = (lsX + rsX) / 2;
-    const chestY = (lsY + rsY) / 2 + torsoW * 0.2;
-    //drawOverlayImage(textDorado, chestX, chestY, torsoW * 1.2);
   } else {
     console.warn("❗ No se detectaron pose landmarks:", rawPoseLandmarks);
   }
