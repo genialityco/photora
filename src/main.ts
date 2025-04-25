@@ -4,7 +4,7 @@ import { ImageSegmenter, FilesetResolver, FaceLandmarker, PoseLandmarker } from 
 const demosSection  = document.getElementById("demos")! as HTMLElement;
 const video         = document.getElementById("webcam")         as HTMLVideoElement;
 const canvasElement = document.getElementById("output_canvas") as HTMLCanvasElement;
-const canvasCtx     = canvasElement.getContext("2d")!;
+const canvasCtx     = canvasElement.getContext("2d",{"alpha":true})!;
 
 // State
 let faceLandmarker: FaceLandmarker;
@@ -106,6 +106,7 @@ async function predict() {
   if (mask) { // Added null check for mask
     const maskData = mask.getAsUint8Array(); // 0 = background, 15 = person, etc.
 
+    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
     // Draw video frame to canvas
     canvasCtx.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
     const frame = canvasCtx.getImageData(0, 0, canvasElement.width, canvasElement.height);
@@ -115,10 +116,10 @@ async function predict() {
       const j = i * 4;
       if (segValue === 0) {
         // background: set to white
-        frame.data[j] = 255;     // R
-        frame.data[j + 1] = 255; // G
-        frame.data[j + 2] = 255; // B
-        // frame.data[j + 3] = 1; // Alpha channel (transparency)
+        // frame.data[j] = 255;     // R
+        // frame.data[j + 1] = 255; // G
+        // frame.data[j + 2] = 255; // B
+        frame.data[j + 3] = 0; // Alpha channel (transparency)
       }
     }
     canvasCtx.putImageData(frame, 0, 0);

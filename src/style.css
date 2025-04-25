@@ -79,6 +79,10 @@ body {
   background-color: transparent !important;
 }
 
+#webcam {
+  display:none; /* Esconde el video original */
+}
+
 /* 4) Tus blend-shapes encima, con mayor z-index */
 #demos .blend-shapes {
   position: absolute;
