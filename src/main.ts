@@ -28,7 +28,7 @@ let faceLandmarker: FaceLandmarker;
 let poseLandmarker: PoseLandmarker;
 let segmenter: ImageSegmenter;
 let webcamRunning = false;
-const videoWidth = 480;
+const videoWidth = window.innerWidth;
 
 // Preload overlay images
 const crownImage = Object.assign(new Image(), { src: "/assets/CORONA.png" });
