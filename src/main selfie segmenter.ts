@@ -1,10 +1,10 @@
-import { ImageSegmenter, FilesetResolver, FaceLandmarker, PoseLandmarker } from '@mediapipe/tasks-vision';
+import { ImageSegmenter, FilesetResolver, FaceLandmarker, PoseLandmarker } from "@mediapipe/tasks-vision";
 
 // DOM elements
-const demosSection  = document.getElementById("demos")! as HTMLElement;
-const video         = document.getElementById("webcam")         as HTMLVideoElement;
+const demosSection = document.getElementById("demos")! as HTMLElement;
+const video = document.getElementById("webcam") as HTMLVideoElement;
 const canvasElement = document.getElementById("output_canvas") as HTMLCanvasElement;
-const canvasCtx     = canvasElement.getContext("2d",{"alpha":true})!;
+const canvasCtx = canvasElement.getContext("2d", { alpha: true })!;
 
 // State
 let faceLandmarker: FaceLandmarker;
@@ -16,22 +16,15 @@ const videoWidth = 480;
 // Preload overlay images
 const crownImage = Object.assign(new Image(), { src: "/assets/CORONA.png" });
 const malumaLogo = Object.assign(new Image(), { src: "/assets/LOGO-MALUMA.png" });
-const dogLeft    = Object.assign(new Image(), { src: "/assets/PERRO 201.png" });
-const dogRight   = Object.assign(new Image(), { src: "/assets/PERRO 303.png" });
+const dogLeft = Object.assign(new Image(), { src: "/assets/PERRO 201.png" });
+const dogRight = Object.assign(new Image(), { src: "/assets/PERRO 303.png" });
 const textDorado = Object.assign(new Image(), { src: "/assets/TEXTO-DORADO.png" });
 
 // Utility to draw an image centered at (cx, cy) with given width, preserving aspect
-function drawOverlayImage(img: HTMLImageElement, cx: number, cy: number, w: number, mirrorHorizontally = false) {
+function drawOverlayImage(img: HTMLImageElement, cx: number, cy: number, w: number) {
   if (!img.complete) return;
   const h = w * (img.naturalHeight / img.naturalWidth);
-
-  canvasCtx.save();
-  if (mirrorHorizontally) {
-    canvasCtx.scale(-1, 1);
-    cx = -cx; // Flip the x-coordinate for mirroring
-  }
   canvasCtx.drawImage(img, cx - w / 2, cy - h / 2, w, h);
-  canvasCtx.restore();
 }
 
 async function init() {
@@ -66,11 +59,12 @@ async function init() {
   segmenter = await ImageSegmenter.createFromOptions(resolver, {
     baseOptions: {
       modelAssetPath:
-        'https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite'
+        "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter_landscape/float16/latest/selfie_segmenter_landscape.tflite",
+      //'https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite'
     },
-    runningMode: 'VIDEO',
+    runningMode: "VIDEO",
     outputCategoryMask: true,
-    outputConfidenceMasks: false
+    outputConfidenceMasks: false,
   });
 
   // Show UI and start camera
@@ -90,18 +84,16 @@ function enableCam() {
 }
 
 let lastVideoTime = -1;
-const bleedingArea = 200; // Define the bleeding area in pixels
-
 async function predict() {
   // Resize to square based on height
   const ratio = video.videoHeight / video.videoWidth;
-  video.style.width  = `${videoWidth}px`;
+  video.style.width = `${videoWidth}px`;
   video.style.height = `${videoWidth * ratio}px`;
 
-  canvasElement.width  = video.videoWidth + bleedingArea * 2;
-  canvasElement.height = video.videoHeight + bleedingArea;
-  canvasElement.style.width  = `${parseInt(video.style.width) + bleedingArea * 2}px`;
-  canvasElement.style.height = `${parseInt(video.style.height) + bleedingArea}px`;
+  canvasElement.width = video.videoWidth;
+  canvasElement.height = video.videoHeight;
+  canvasElement.style.width = video.style.width;
+  canvasElement.style.height = video.style.height;
 
   if (video.currentTime !== lastVideoTime) {
     lastVideoTime = video.currentTime;
@@ -112,60 +104,65 @@ async function predict() {
   const segResult = await segmenter.segmentForVideo(video, segNow);
 
   const mask = segResult.categoryMask;
-  if (mask) { // Added null check for mask
+  if (mask) {
+    // Added null check for mask
     const maskData = mask.getAsUint8Array(); // 0 = background, 15 = person, etc.
 
     canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-    // Draw video frame to canvas with bleeding area offset
-    canvasCtx.drawImage(video, bleedingArea, bleedingArea, video.videoWidth, video.videoHeight);
-    const frame = canvasCtx.getImageData(bleedingArea, bleedingArea, video.videoWidth, video.videoHeight);
+    // Draw video frame to canvas
+    canvasCtx.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+    const frame = canvasCtx.getImageData(0, 0, canvasElement.width, canvasElement.height);
 
+    //console.log("Unique values in mask:", [...new Set(maskData)]);
     for (let i = 0; i < maskData.length; i++) {
       const segValue = maskData[i];
+      //console.log("segValue", segValue, maskData.length);
       const j = i * 4;
-      if (segValue === 0) {
-        // background: set to transparent
+      if (segValue === 255) {
         frame.data[j + 3] = 0; // Alpha channel (transparency)
       }
     }
-    canvasCtx.putImageData(frame, bleedingArea, bleedingArea);
+    canvasCtx.putImageData(frame, 0, 0);
   }
 
   // --- Continue with overlays ---
-  const now     = performance.now();
+  const now = performance.now();
   const faceRes = await faceLandmarker.detectForVideo(video, now);
   const poseRes = await poseLandmarker.detectForVideo(video, now);
 
+  // Remove this line, as the canvas is already cleared/updated above:
+  // canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
   // Draw crown + Maluma logo using face landmarks
   if (faceRes.faceLandmarks?.length) {
-    const lm        = faceRes.faceLandmarks[0];
-    const f         = lm[10];
-    const wNorm     = Math.abs(lm[234].x - lm[454].x);
-    const faceW     = wNorm * video.videoWidth;
-    const crownW    = faceW * 1.5;
-    const crownH    = crownW * (crownImage.naturalHeight / crownImage.naturalWidth);
-    const crownX    = f.x * video.videoWidth - crownW / 2 + bleedingArea;
-    const crownY    = f.y * video.videoHeight - crownH * 1.1 + bleedingArea;
+    const lm = faceRes.faceLandmarks[0];
+    const f = lm[10];
+    const wNorm = Math.abs(lm[234].x - lm[454].x);
+    const faceW = wNorm * canvasElement.width;
+    const crownW = faceW * 1.5;
+    const crownH = crownW * (crownImage.naturalHeight / crownImage.naturalWidth);
+    const crownX = f.x * canvasElement.width - crownW / 2;
+    const crownY = f.y * canvasElement.height - crownH * 1.1;
     canvasCtx.drawImage(crownImage, crownX, crownY, crownW, crownH);
-    drawOverlayImage(malumaLogo, crownX + crownW / 2, crownY - crownH * 0.1, crownW, true);
+    drawOverlayImage(malumaLogo, crownX + crownW / 2, crownY - crownH * 0.1, crownW);
 
     // Position textDorado below the chin (landmark 152)
     const chin = lm[152];
-    const chinX = chin.x * video.videoWidth + bleedingArea;
-    const chinY = chin.y * video.videoHeight + bleedingArea;
-    drawOverlayImage(textDorado, chinX, chinY + faceW * 0.5, crownW, true);
+    const chinX = chin.x * canvasElement.width;
+    const chinY = chin.y * canvasElement.height;
+    drawOverlayImage(textDorado, chinX, chinY + faceW * 0.5, crownW);
 
     // Position dogLeft at the left ear (landmark 234)
     const leftEar = lm[234];
-    const leftEarX = leftEar.x * video.videoWidth + bleedingArea;
-    const leftEarY = leftEar.y * video.videoHeight + bleedingArea;
-    drawOverlayImage(dogLeft, leftEarX - faceW * 0.5, leftEarY + faceW * 0.25, crownW * 2);
+    const leftEarX = leftEar.x * canvasElement.width;
+    const leftEarY = leftEar.y * canvasElement.height;
+    drawOverlayImage(dogLeft, leftEarX - faceW * 0.5, leftEarY + faceW * 0.25, crownW);
 
     // Position dogRight at the right ear (landmark 454)
     const rightEar = lm[454];
-    const rightEarX = rightEar.x * video.videoWidth + bleedingArea;
-    const rightEarY = rightEar.y * video.videoHeight + bleedingArea;
-    drawOverlayImage(dogRight, rightEarX + faceW * 0.5, rightEarY + faceW * 0.25, crownW * 2);
+    const rightEarX = rightEar.x * canvasElement.width;
+    const rightEarY = rightEar.y * canvasElement.height;
+    drawOverlayImage(dogRight, rightEarX + faceW * 0.5, rightEarY + faceW * 0.25, crownW);
   }
 
   // Debug: inspect poseRes to see its shape
@@ -180,7 +177,6 @@ async function predict() {
     // const lsY     = pl[11].y * canvasElement.height;
     // const rsX     = pl[12].x * canvasElement.width;
     // const rsY     = pl[12].y * canvasElement.height;
-
     // Dogs on shoulders
     //drawOverlayImage(dogLeft,  lsX, lsY,       torsoW * 0.6);
     //drawOverlayImage(dogRight, rsX, rsY,      torsoW * 0.6);

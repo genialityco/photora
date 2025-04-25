@@ -20,14 +20,14 @@ body {
 #webcam,
 #output_canvas {
   position: absolute;
-  top: 50%;
+  bottom: 0;
   left: 50%;
   width: 100vh;
   height: 100vh;
   object-fit: cover;
-  transform: translate(-50%, -50%) rotateY(180deg);
-  -webkit-transform: translate(-50%, -50%) rotateY(180deg);
-  -moz-transform: translate(-50%, -50%) rotateY(180deg);
+  transform: translate(-50%, 0) rotateY(180deg);
+  -webkit-transform: translate(-50%, 0) rotateY(180deg);
+  -moz-transform: translate(-50%, 0) rotateY(180deg);
   z-index: 1;
 }
 
@@ -63,21 +63,7 @@ body {
   pointer-events: auto;
 }
 
-/* 3) Video y canvas en cuadrado fullscreen centrado y espejo */
-#webcam,
-#output_canvas {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100vh;
-  height: 100vh;
-  object-fit: cover;
-  transform: translate(-50%, -50%) rotateY(180deg);
-  -webkit-transform: translate(-50%, -50%) rotateY(180deg);
-  -moz-transform: translate(-50%, -50%) rotateY(180deg);
-  z-index: 1;
-  background-color: transparent !important;
-}
+
 
 #webcam {
   display:none; /* Esconde el video original */
