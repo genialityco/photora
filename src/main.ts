@@ -171,11 +171,11 @@ async function predict() {
   const rawPoseLandmarks = (poseRes as any).landmarks ?? (poseRes as any).landmarks;
 
   if (Array.isArray(rawPoseLandmarks) && rawPoseLandmarks.length > 0) {
-    const pl      = rawPoseLandmarks[0];
-    const lsX     = pl[11].x * canvasElement.width;
-    const lsY     = pl[11].y * canvasElement.height;
-    const rsX     = pl[12].x * canvasElement.width;
-    const rsY     = pl[12].y * canvasElement.height;
+    //const pl      = rawPoseLandmarks[0];
+    // const lsX     = pl[11].x * canvasElement.width;
+    // const lsY     = pl[11].y * canvasElement.height;
+    // const rsX     = pl[12].x * canvasElement.width;
+    // const rsY     = pl[12].y * canvasElement.height;
 
     // Dogs on shoulders
     //drawOverlayImage(dogLeft,  lsX, lsY,       torsoW * 0.6);
