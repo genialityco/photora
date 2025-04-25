@@ -1,5 +1,3 @@
-import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
-// @ts-ignore: TypeScript cannot resolve the module from the CDN
 import { ImageSegmenter, FilesetResolver, FaceLandmarker, PoseLandmarker } from '@mediapipe/tasks-vision';
 
 // DOM elements
@@ -9,9 +7,9 @@ const canvasElement = document.getElementById("output_canvas") as HTMLCanvasElem
 const canvasCtx     = canvasElement.getContext("2d")!;
 
 // State
-let faceLandmarker: typeof FaceLandmarker;
-let poseLandmarker: typeof PoseLandmarker;
-let segmenter: typeof ImageSegmenter;
+let faceLandmarker: FaceLandmarker;
+let poseLandmarker: PoseLandmarker;
+let segmenter: ImageSegmenter;
 let webcamRunning = false;
 const videoWidth = 480;
 
@@ -55,7 +53,7 @@ async function init() {
     },
     runningMode: "VIDEO",
     numPoses: 1,
-    outputSegmentation: false,
+    outputSegmentationMasks: false,
   });
 
   segmenter = await ImageSegmenter.createFromOptions(resolver, {
@@ -105,24 +103,26 @@ async function predict() {
   const segResult = await segmenter.segmentForVideo(video, segNow);
 
   const mask = segResult.categoryMask;
-  const maskData = mask.getAsUint8Array(); // 0 = background, 15 = person, etc.
+  if (mask) { // Added null check for mask
+    const maskData = mask.getAsUint8Array(); // 0 = background, 15 = person, etc.
 
-  // Draw video frame to canvas
-  canvasCtx.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-  const frame = canvasCtx.getImageData(0, 0, canvasElement.width, canvasElement.height);
+    // Draw video frame to canvas
+    canvasCtx.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+    const frame = canvasCtx.getImageData(0, 0, canvasElement.width, canvasElement.height);
 
-  for (let i = 0; i < maskData.length; i++) {
-    const segValue = maskData[i];
-    const j = i * 4;
-    if (segValue === 0) {
-      // background: set to white
-      frame.data[j] = 255;     // R
-      frame.data[j + 1] = 255; // G
-      frame.data[j + 2] = 255; // B
-      // frame.data[j + 3] = 1; // Alpha channel (transparency)
+    for (let i = 0; i < maskData.length; i++) {
+      const segValue = maskData[i];
+      const j = i * 4;
+      if (segValue === 0) {
+        // background: set to white
+        frame.data[j] = 255;     // R
+        frame.data[j + 1] = 255; // G
+        frame.data[j + 2] = 255; // B
+        // frame.data[j + 3] = 1; // Alpha channel (transparency)
+      }
     }
+    canvasCtx.putImageData(frame, 0, 0);
   }
-  canvasCtx.putImageData(frame, 0, 0);
 
   // --- Continue with overlays ---
   const now     = performance.now();
