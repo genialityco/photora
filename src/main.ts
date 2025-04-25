@@ -288,7 +288,6 @@ async function predict() {
 
 async function captureAndUpload() {
   const overlay = document.getElementById("loading-overlay")!;
-  const btnElem = document.querySelector(".capture-btn")! as HTMLElement;
 
   // 1) Muestra el spinner
   overlay.classList.add("visible");
