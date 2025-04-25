@@ -234,9 +234,9 @@ async function predict() {
     const leftEarY = leftEar.y * video.videoHeight + bleedingArea;
     drawOverlayImage(
       dogLeft,
-      leftEarX - faceW * 0.5,
+      leftEarX - faceW * 0.75,
       leftEarY + faceW * 0.25,
-      crownW * 2
+      dogLeft.naturalWidth * 0.25 // Reduce size to 25%
     );
 
     // Position dogRight at the right ear (landmark 454)
@@ -245,9 +245,9 @@ async function predict() {
     const rightEarY = rightEar.y * video.videoHeight + bleedingArea;
     drawOverlayImage(
       dogRight,
-      rightEarX + faceW * 0.5,
+      rightEarX + faceW * 0.75,
       rightEarY + faceW * 0.25,
-      crownW * 2
+      dogRight.naturalWidth * 0.25 // Reduce size to 25%
     );
   }
 
