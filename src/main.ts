@@ -133,7 +133,7 @@ init();
 function enableCam() {
   if (webcamRunning) return;
   webcamRunning = true;
-  navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+  navigator.mediaDevices.getUserMedia({ video:{ width:1280,height:720 } }).then((stream) => {
     video.srcObject = stream;
     video.addEventListener("loadeddata", predict);
   });
@@ -258,25 +258,25 @@ async function predict() {
     (poseRes as any).landmarks ?? (poseRes as any).landmarks;
 
   if (Array.isArray(rawPoseLandmarks) && rawPoseLandmarks.length > 0) {
-    const pl = rawPoseLandmarks[0];
-    const ls = pl[11], rs = pl[12], le = pl[13], re = pl[14];
+    // const pl = rawPoseLandmarks[0];
+    // const ls = pl[11], rs = pl[12], le = pl[13], re = pl[14];
   
-    // ancho del overlay (15% del ancho del canvas)
-    const overlayW = canvasElement.width * 0.15;
-    // desplazamiento lateral mayor, para que queden bien afuera
-    const offX = overlayW * -0.5;
+    // // ancho del overlay (15% del ancho del canvas)
+    // const overlayW = canvasElement.width * 0.15;
+    // // desplazamiento lateral mayor, para que queden bien afuera
+    // const offX = overlayW * -0.5;
   
-    // punto medio hombro–codo izquierdo
-    const midLX = ((ls.x + le.x) / 2) * video.videoWidth  + bleedingArea;
-    const midLY = ((ls.y + le.y) / 2) * video.videoHeight + bleedingArea;
-    // mueve la imagen aún más hacia la izquierda (afuera del cuerpo)
-    drawOverlayImage(perro101Image, midLX - offX, midLY, overlayW);
+    // // punto medio hombro–codo izquierdo
+    // const midLX = ((ls.x + le.x) / 2) * video.videoWidth  + bleedingArea;
+    // const midLY = ((ls.y + le.y) / 2) * video.videoHeight + bleedingArea;
+    // // mueve la imagen aún más hacia la izquierda (afuera del cuerpo)
+    // drawOverlayImage(perro101Image, midLX - offX, midLY, overlayW);
   
-    // punto medio hombro–codo derecho
-    const midRX = ((rs.x + re.x) / 2) * video.videoWidth  + bleedingArea;
-    const midRY = ((rs.y + re.y) / 2) * video.videoHeight + bleedingArea;
-    // mueve la imagen aún más hacia la derecha (afuera del cuerpo)
-    drawOverlayImage(m01Image, midRX + offX, midRY, overlayW);
+    // // punto medio hombro–codo derecho
+    // const midRX = ((rs.x + re.x) / 2) * video.videoWidth  + bleedingArea;
+    // const midRY = ((rs.y + re.y) / 2) * video.videoHeight + bleedingArea;
+    // // mueve la imagen aún más hacia la derecha (afuera del cuerpo)
+    // drawOverlayImage(m01Image, midRX + offX, midRY, overlayW);
   } else {
     console.warn("❗ No se detectaron pose landmarks:", rawPoseLandmarks);
   }

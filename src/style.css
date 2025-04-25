@@ -20,7 +20,7 @@ body {
 #webcam,
 #output_canvas {
   position: absolute;
-  bottom: 0;
+  bottom: 15%;
   left: 50%;
   width: 100vh;
   height: 100vh;
