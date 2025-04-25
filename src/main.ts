@@ -1,6 +1,6 @@
 import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
 
-const { FilesetResolver, FaceLandmarker, PoseLandmarker } = vision;
+const { ImageSegmenter ,FilesetResolver, FaceLandmarker, PoseLandmarker } = vision;
 
 // DOM elements
 const demosSection  = document.getElementById("demos")! as HTMLElement;
@@ -11,6 +11,7 @@ const canvasCtx     = canvasElement.getContext("2d")!;
 // State
 let faceLandmarker: FaceLandmarker;
 let poseLandmarker: PoseLandmarker;
+let segmenter: ImageSegmenter;
 let webcamRunning = false;
 const videoWidth = 480;
 
@@ -57,6 +58,16 @@ async function init() {
     runningMode: "VIDEO",
     numPoses: 1,
     outputSegmentation: false,
+  });
+
+  segmenter = await ImageSegmenter.createFromOptions(resolver, {
+    baseOptions: {
+      modelAssetPath:
+        'https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite'
+    },
+    runningMode: 'VIDEO',
+    outputCategoryMask: true,
+    outputConfidenceMasks: false
   });
 
   // Show UI and start camera
@@ -108,11 +119,29 @@ async function predict() {
     const crownX    = f.x * canvasElement.width - crownW/2;
     const crownY    = f.y * canvasElement.height - crownH*1.1;
     canvasCtx.drawImage(crownImage, crownX, crownY, crownW, crownH);
-    drawOverlayImage(malumaLogo, crownX + crownW/2, crownY - crownH*0.6, crownW);
+    drawOverlayImage(malumaLogo, crownX + crownW/2, crownY - crownH*0.1, crownW);
+
+    // Position textDorado below the chin (landmark 152)
+    const chin = lm[152];
+    const chinX = chin.x * canvasElement.width;
+    const chinY = chin.y * canvasElement.height;
+    drawOverlayImage(textDorado, chinX, chinY + faceW * 0.5, crownW);
+
+    // Position dogLeft at the left ear (landmark 234)
+    const leftEar = lm[234];
+    const leftEarX = leftEar.x * canvasElement.width;
+    const leftEarY = leftEar.y * canvasElement.height;
+    drawOverlayImage(dogLeft, leftEarX - faceW * 0.5, leftEarY + faceW * 0.25, crownW);
+
+    // Position dogRight at the right ear (landmark 454)
+    const rightEar = lm[454];
+    const rightEarX = rightEar.x * canvasElement.width;
+    const rightEarY = rightEar.y * canvasElement.height;
+    drawOverlayImage(dogRight, rightEarX + faceW * 0.5, rightEarY + faceW * 0.25, crownW);
   }
 
   // Debug: inspect poseRes to see its shape
-  console.log("poseRes →", poseRes);
+  //console.log("poseRes →", poseRes);
 
   // Support both camelCase and snake_case
   const rawPoseLandmarks = (poseRes as any).landmarks ?? (poseRes as any).landmarks;
@@ -126,15 +155,15 @@ async function predict() {
     const torsoW  = Math.hypot(rsX - lsX, rsY - lsY);
 
     // Dogs on shoulders
-    drawOverlayImage(dogLeft,  lsX, lsY,       torsoW * 0.6);
-    drawOverlayImage(dogRight, rsX, rsY,      torsoW * 0.6);
+    //drawOverlayImage(dogLeft,  lsX, lsY,       torsoW * 0.6);
+    //drawOverlayImage(dogRight, rsX, rsY,      torsoW * 0.6);
     // Beneath dogs
-    drawOverlayImage(m01,      lsX, lsY + torsoW,   torsoW * 0.5);
-    drawOverlayImage(dog101,   rsX, rsY + torsoW,   torsoW * 0.5);
+    //drawOverlayImage(m01,      lsX, lsY + torsoW,   torsoW * 0.5);
+    //drawOverlayImage(dog101,   rsX, rsY + torsoW,   torsoW * 0.5);
     // Text on chest (mid-shoulder + offset)
     const chestX = (lsX + rsX) / 2;
     const chestY = (lsY + rsY) / 2 + torsoW * 0.2;
-    drawOverlayImage(textDorado, chestX, chestY, torsoW * 1.2);
+    //drawOverlayImage(textDorado, chestX, chestY, torsoW * 1.2);
   } else {
     console.warn("❗ No se detectaron pose landmarks:", rawPoseLandmarks);
   }

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Person Segmentation</title>
+  <style>
+    body { text-align: center; }
+    canvas { border: 1px solid black; }
+  </style>
+</head>
+<body>
+  <h2>MediaPipe ImageSegmenter - Background Removal</h2>
+  <video id="video" autoplay playsinline width="640" height="480" style="display:none;"></video>
+  <canvas id="canvas" width="640" height="480"></canvas>
+
+  <script type="module">
+    import {
+      ImageSegmenter,
+      FilesetResolver
+    } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest';
+
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    async function initCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480 }
+      });
+      video.srcObject = stream;
+      await video.play();
+    }
+
+    async function initSegmenter() {
+      const vision = await FilesetResolver.forVisionTasks(
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
+      );
+
+      const segmenter = await ImageSegmenter.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath:
+            'https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite'
+        },
+        runningMode: 'VIDEO',
+        outputCategoryMask: true,
+        outputConfidenceMasks: false
+      });
+
+      const processFrame = async () => {
+        const now = Date.now();
+        const result = await segmenter.segmentForVideo(video, now);
+
+        const mask = result.categoryMask;
+        const width = mask.width;
+        const height = mask.height;
+        const maskData = mask.getAsUint8Array(); // Get raw values (0 = background, 15 = person, etc.)
+
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+        for (let i = 0; i < maskData.length; i++) {
+          const segValue = maskData[i];
+          const j = i * 4;
+
+          if (segValue === 0) {
+            // background
+            frame.data[j] = 255;     // R
+            frame.data[j + 1] = 255; // G
+            frame.data[j + 2] = 255; // B
+          }
+        }
+
+        ctx.putImageData(frame, 0, 0);
+        requestAnimationFrame(processFrame);
+      };
+
+      requestAnimationFrame(processFrame);
+    }
+
+    await initCamera();
+    await initSegmenter();
+  </script>
+</body>
+</html>
