@@ -40,8 +40,8 @@ const dogRight = Object.assign(new Image(), { src: "/assets/PERRO 303.png" });
 const textDorado = Object.assign(new Image(), {
   src: "/assets/TEXTO-DORADO.png",
 });
-const m01Image     = Object.assign(new Image(), { src: "/assets/M 01.png" });
-const perro101Image = Object.assign(new Image(), { src: "/assets/PERRO 101.png" });
+// const m01Image     = Object.assign(new Image(), { src: "/assets/M 01.png" });
+// const perro101Image = Object.assign(new Image(), { src: "/assets/PERRO 101.png" });
 
 // Utility to draw an image centered at (cx, cy) with given width, preserving aspect
 function drawOverlayImage(
