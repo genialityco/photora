@@ -236,7 +236,7 @@ async function predict() {
       dogLeft,
       leftEarX - faceW * 0.75,
       leftEarY + faceW * 0.25,
-      dogLeft.naturalWidth * 0.25 // Reduce size to 25%
+      dogLeft.naturalWidth * 0.15 // Reduce size to 25%
     );
 
     // Position dogRight at the right ear (landmark 454)
@@ -247,7 +247,7 @@ async function predict() {
       dogRight,
       rightEarX + faceW * 0.75,
       rightEarY + faceW * 0.25,
-      dogRight.naturalWidth * 0.25 // Reduce size to 25%
+      dogRight.naturalWidth * 0.15 // Reduce size to 25%
     );
   }
 
