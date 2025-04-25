@@ -14,21 +14,24 @@
 </head>
 
 <body>
-  <img id="header-img" src="/assets/FRASE_SUPERIOR.png" class="overlay-img header-img" alt="Frase Superior" />
-  <section id="demos" class="invisible">
-    <div id="liveView" class="videoView">
-      <video id="webcam" autoplay playsinline></video>
-      <canvas id="output_canvas"></canvas>
-    </div>
-  </section>
-  
-  <div id="loading-overlay">
-    <div class="loader"></div>
-    <div class="loading-text">Procesando fotografía…</div>
+  <!-- este wrapper tendrá la proporción 1:1 -->
+  <div id="capture-area">
+    <img id="header-img" src="/assets/FRASE_SUPERIOR.png" class="overlay-img header-img" alt="Frase Superior" />
+    <section id="demos" class="invisible">
+      <div id="liveView" class="videoView">
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="output_canvas"></canvas>
+      </div>
+    </section>
+    <img id="betplay-img" src="/assets/LOGO-BETPLAY.png" class="overlay-img betplay-img" alt="Logo Betplay" />
   </div>
 
-  <img id="betplay-img" src="/assets/LOGO-BETPLAY.png" class="overlay-img betplay-img" alt="Logo Betplay" />
+  <!-- loader y botón los dejamos fuera, así no salen en la captura -->
+  <div id="loading-overlay">…</div>
+  <button class="capture-btn">📸</button>
+
   <script type="module" src="/src/main.ts"></script>
 </body>
+
 
 </html>

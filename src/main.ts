@@ -294,7 +294,9 @@ async function captureAndUpload() {
   
   try {
     // 2) Captura TODO el <body> pero excluye spinner y botón
-    const screenshot = await html2canvas(document.body, {
+    const area = document.getElementById("capture-area")!;
+
+    const screenshot = await html2canvas(area, {
       backgroundColor: null,
       ignoreElements: (el) => {
         return (
