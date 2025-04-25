@@ -1,13 +1,25 @@
 /* Fondo de toda la página */
+/* 1) Body solo centra el wrapper */
 body {
-  margin: 0;              /* elimina márgenes para cubrir todo */
+  margin: 0;
   padding: 0;
-  background: url('/assets/FONDO_INICIO.png') no-repeat center center fixed;
-  background-size: cover;
   height: 100vh;
-  width: 100vw;
+  background-color: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   overflow: hidden;
 }
+
+/* 2) Wrapper cuadrado con fondo */
+#capture-area {
+  position: relative;
+  width: min(100vw, 100vh);        /* toma el menor lado de la ventana */
+  aspect-ratio: 1 / 1;             /* fuerza proporción 1:1 */
+  background: url('/assets/FONDO_INICIO.png') no-repeat center/cover;
+  overflow: hidden;
+}
+
 
 .videoView {
   float: none;
@@ -55,7 +67,7 @@ body {
 /* Esquina inferior derecha */
 .betplay-img {
   bottom: 20px;
-  right: 20px;
+  right: 28%;
   width: 100px;   /* ajústalo a tu gusto */
   height: auto;
 }

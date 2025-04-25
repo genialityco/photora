@@ -40,8 +40,8 @@ const dogRight = Object.assign(new Image(), { src: "/assets/PERRO 303.png" });
 const textDorado = Object.assign(new Image(), {
   src: "/assets/TEXTO-DORADO.png",
 });
-const m01Image     = Object.assign(new Image(), { src: "/assets/M 01.png" });
-const perro101Image = Object.assign(new Image(), { src: "/assets/PERRO 101.png" });
+// const m01Image     = Object.assign(new Image(), { src: "/assets/M 01.png" });
+// const perro101Image = Object.assign(new Image(), { src: "/assets/PERRO 101.png" });
 
 // Utility to draw an image centered at (cx, cy) with given width, preserving aspect
 function drawOverlayImage(
@@ -236,7 +236,7 @@ async function predict() {
       dogLeft,
       leftEarX - faceW * 0.75,
       leftEarY + faceW * 0.25,
-      dogLeft.naturalWidth * 0.25 // Reduce size to 25%
+      dogLeft.naturalWidth * 0.15 // Reduce size to 25%
     );
 
     // Position dogRight at the right ear (landmark 454)
@@ -247,7 +247,7 @@ async function predict() {
       dogRight,
       rightEarX + faceW * 0.75,
       rightEarY + faceW * 0.25,
-      dogRight.naturalWidth * 0.25 // Reduce size to 25%
+      dogRight.naturalWidth * 0.15 // Reduce size to 25%
     );
   }
 
@@ -294,7 +294,9 @@ async function captureAndUpload() {
   
   try {
     // 2) Captura TODO el <body> pero excluye spinner y botón
-    const screenshot = await html2canvas(document.body, {
+    const area = document.getElementById("capture-area")!;
+
+    const screenshot = await html2canvas(area, {
       backgroundColor: null,
       ignoreElements: (el) => {
         return (
