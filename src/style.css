@@ -37,6 +37,30 @@ body {
   background-color: transparent !important;
 }
 
+.overlay-img {
+  position: fixed;
+  pointer-events: none; /* para que no interfiera con clicks */
+  z-index: 9998;        /* justo por debajo del botón de captura (9999) */
+}
+
+/* Centrado arriba */
+.header-img {
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;   /* ajústalo a tu gusto */
+  height: auto;
+}
+
+/* Esquina inferior derecha */
+.betplay-img {
+  bottom: 20px;
+  right: 20px;
+  width: 100px;   /* ajústalo a tu gusto */
+  height: auto;
+}
+
+
 
 /* 1) El overlay completo sobre la cámara */
 #demos {
@@ -81,4 +105,108 @@ body {
   border-radius: 4px;
   max-height: 30%;
   overflow-y: auto;
+}
+
+/* Botón flotante centrado abajo */
+.capture-btn {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 60px;
+  border-radius: 80%;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  cursor: pointer;
+  z-index: 9999;
+  transition: background .2s;
+}
+.capture-btn:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+/* Estado “loading” del botón */
+.capture-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* Modal de previsualización */
+#preview-modal {
+  position: fixed;    
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: none;       
+  align-items: center; 
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 10000;
+}
+
+#preview-modal .modal-content {
+  max-width: 280px;
+  padding: 16px;
+}
+
+/* Miniatura de la captura */
+#preview-modal #preview-img {
+  display: block;
+  width: 100%;    
+  height: auto;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+/* QR centrado */
+#preview-modal #qr-code {
+  text-align: center;
+}
+
+/* Oculta el botón de descarga */
+#preview-modal #download-link {
+  display: none;
+}
+#loading-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;    /* apila spinner y texto */
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  visibility: hidden;
+}
+
+#loading-overlay.visible {
+  visibility: visible;
+}
+
+/* El spinner ya lo tienes */
+#loading-overlay .loader {
+  border: 6px solid rgba(255,255,255,0.3);
+  border-top: 6px solid white;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+/* Nuevo estilo para el texto */
+#loading-overlay .loading-text {
+  margin-top: 12px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
