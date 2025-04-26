@@ -13,6 +13,7 @@ import {
 import { storage } from "./firebaseConfig";
 import QRCode from "qrcode";
 import html2canvas from "html2canvas";
+import { setupCameraConfig } from "./cameraConfig";
 
 
 // DOM elements
@@ -28,7 +29,7 @@ let faceLandmarker: FaceLandmarker;
 //let poseLandmarker: PoseLandmarker;
 let segmenter: ImageSegmenter;
 let webcamRunning = false;
-const videoWidth = window.innerWidth/4;
+const videoWidth = window.innerWidth;
 
 // Preload overlay images
 const crownImage = Object.assign(new Image(), { src: "/assets/CORONA.png" });
@@ -130,19 +131,57 @@ modal.addEventListener("click", (e) => {
 
 init();
 
-function enableCam() {
-  if (webcamRunning) return;
-  webcamRunning = true;
-  navigator.mediaDevices.getUserMedia({ video:{ width:1280,height:720 } }).then((stream) => {
+function enableCam(deviceId?: string) {
+  if (webcamRunning) {
+    webcamRunning = false; // Stop the current prediction loop
+    video.srcObject = null; // Clear the current video stream
+  }
+
+  const constraints: MediaStreamConstraints = {
+    video: deviceId ? { deviceId: { exact: deviceId }, width: 1280, height: 720 } : { width: 1280, height: 720 },
+  };
+
+  navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
     video.srcObject = stream;
-    video.addEventListener("loadeddata", predict);
+    video.onloadedmetadata = () => {
+      video.play();
+      webcamRunning = true; // Restart the prediction loop
+      requestAnimationFrame(predict);
+    };
+  }).catch((err) => {
+    console.error("Error accessing webcam:", err);
   });
 }
 
 let lastVideoTime = -1;
 const bleedingArea = 200; // Define the bleeding area in pixels
 
+// Create an offscreen canvas for processing
+const offscreenCanvas = document.createElement("canvas");
+const offscreenCtx = offscreenCanvas.getContext("2d", { alpha: true })!;
+
+// Utility to process video frames offscreen
+function processOffscreen(video: HTMLVideoElement) {
+  offscreenCanvas.width = video.videoWidth;
+  offscreenCanvas.height = video.videoHeight;
+  offscreenCtx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+  return offscreenCtx.getImageData(0, 0, video.videoWidth, video.videoHeight);
+}
+
 async function predict() {
+  if (!video.videoWidth || !video.videoHeight) {
+    // Skip processing if video dimensions are invalid
+    if (webcamRunning) requestAnimationFrame(predict);
+    return;
+  }
+
+  if (video.currentTime === lastVideoTime) {
+    // Skip processing if the video frame hasn't changed
+    if (webcamRunning) requestAnimationFrame(predict);
+    return;
+  }
+  lastVideoTime = video.currentTime;
+
   // Resize to square based on height
   const ratio = video.videoHeight / video.videoWidth;
   video.style.width = `${videoWidth}px`;
@@ -150,7 +189,7 @@ async function predict() {
 
   canvasElement.width = video.videoWidth + bleedingArea * 2;
   canvasElement.height = video.videoHeight + bleedingArea;
-  
+
   canvasElement.style.width = `${
     parseInt(video.style.width) + bleedingArea * 2
   }px`;
@@ -158,129 +197,81 @@ async function predict() {
     parseInt(video.style.height) + bleedingArea
   }px`;
 
-  if (video.currentTime !== lastVideoTime) {
-    lastVideoTime = video.currentTime;
-  }
+  try {
+    // --- Segmentation: Remove background ---
+    const segNow = Date.now();
+    const segResult = await segmenter.segmentForVideo(video, segNow);
 
-  // --- Segmentation: Remove background ---
-  const segNow = Date.now();
-  const segResult = await segmenter.segmentForVideo(video, segNow);
+    const mask = segResult.categoryMask;
+    if (mask) {
+      const maskData = mask.getAsUint8Array(); // 0 = background, 15 = person, etc.
 
-  const mask = segResult.categoryMask;
-  if (mask) {
-    // Added null check for mask
-    const maskData = mask.getAsUint8Array(); // 0 = background, 15 = person, etc.
+      // Use offscreen canvas for processing
+      const frame = processOffscreen(video);
 
-    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-    // Draw video frame to canvas with bleeding area offset
-    canvasCtx.drawImage(
-      video,
-      bleedingArea,
-      bleedingArea,
-      video.videoWidth,
-      video.videoHeight
-    );
-    const frame = canvasCtx.getImageData(
-      bleedingArea,
-      bleedingArea,
-      video.videoWidth,
-      video.videoHeight
-    );
-
-    for (let i = 0; i < maskData.length; i++) {
-      const segValue = maskData[i];
-      const j = i * 4;
-      if (segValue === 0) {
-        // background: set to transparent
-        frame.data[j + 3] = 0; // Alpha channel (transparency)
+      for (let i = 0; i < maskData.length; i++) {
+        const segValue = maskData[i];
+        const j = i * 4;
+        if (segValue === 0) {
+          // background: set to transparent
+          frame.data[j + 3] = 0; // Alpha channel (transparency)
+        }
       }
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.putImageData(frame, bleedingArea, bleedingArea);
     }
-    canvasCtx.putImageData(frame, bleedingArea, bleedingArea);
+
+    // --- Continue with overlays ---
+    const now = performance.now();
+    const faceRes = await faceLandmarker.detectForVideo(video, now);
+
+    if (faceRes.faceLandmarks?.length) {
+      const lm = faceRes.faceLandmarks[0];
+      const f = lm[10];
+      const wNorm = Math.abs(lm[234].x - lm[454].x);
+      const faceW = wNorm * video.videoWidth;
+      const crownW = faceW * 1.5;
+      const crownH =
+        crownW * (crownImage.naturalHeight / crownImage.naturalWidth);
+      const crownX = f.x * video.videoWidth - crownW / 2 + bleedingArea;
+      const crownY = f.y * video.videoHeight - crownH * 1.1 + bleedingArea;
+      canvasCtx.drawImage(crownImage, crownX, crownY, crownW, crownH);
+      drawOverlayImage(
+        malumaLogo,
+        crownX + crownW / 2,
+        crownY - crownH * 0.1,
+        crownW,
+        true
+      );
+
+      const chin = lm[152];
+      const chinX = chin.x * video.videoWidth + bleedingArea;
+      const chinY = chin.y * video.videoHeight + bleedingArea;
+      drawOverlayImage(textDorado, chinX, chinY + faceW * 0.5, crownW, true);
+
+      const leftEar = lm[234];
+      const leftEarX = leftEar.x * video.videoWidth + bleedingArea;
+      const leftEarY = leftEar.y * video.videoHeight + bleedingArea;
+      drawOverlayImage(
+        dogLeft,
+        leftEarX - faceW * 0.75,
+        leftEarY + faceW * 0.25,
+        dogLeft.naturalWidth * 0.15
+      );
+
+      const rightEar = lm[454];
+      const rightEarX = rightEar.x * video.videoWidth + bleedingArea;
+      const rightEarY = rightEar.y * video.videoHeight + bleedingArea;
+      drawOverlayImage(
+        dogRight,
+        rightEarX + faceW * 0.75,
+        rightEarY + faceW * 0.25,
+        dogRight.naturalWidth * 0.15
+      );
+    }
+  } catch (err) {
+    console.error("Error during prediction:", err);
   }
-
-  // --- Continue with overlays ---
-  const now = performance.now();
-  // const faceRes = await faceLandmarker.detectForVideo(video, now);
-  // //const poseRes = await poseLandmarker.detectForVideo(video, now);
-
-  // // Draw crown + Maluma logo using face landmarks
-  // if (faceRes.faceLandmarks?.length) {
-  //   const lm = faceRes.faceLandmarks[0];
-  //   const f = lm[10];
-  //   const wNorm = Math.abs(lm[234].x - lm[454].x);
-  //   const faceW = wNorm * video.videoWidth;
-  //   const crownW = faceW * 1.5;
-  //   const crownH =
-  //     crownW * (crownImage.naturalHeight / crownImage.naturalWidth);
-  //   const crownX = f.x * video.videoWidth - crownW / 2 + bleedingArea;
-  //   const crownY = f.y * video.videoHeight - crownH * 1.1 + bleedingArea;
-  //   canvasCtx.drawImage(crownImage, crownX, crownY, crownW, crownH);
-  //   drawOverlayImage(
-  //     malumaLogo,
-  //     crownX + crownW / 2,
-  //     crownY - crownH * 0.1,
-  //     crownW,
-  //     true
-  //   );
-
-  //   // Position textDorado below the chin (landmark 152)
-  //   const chin = lm[152];
-  //   const chinX = chin.x * video.videoWidth + bleedingArea;
-  //   const chinY = chin.y * video.videoHeight + bleedingArea;
-  //   drawOverlayImage(textDorado, chinX, chinY + faceW * 0.5, crownW, true);
-
-  //   // Position dogLeft at the left ear (landmark 234)
-  //   const leftEar = lm[234];
-  //   const leftEarX = leftEar.x * video.videoWidth + bleedingArea;
-  //   const leftEarY = leftEar.y * video.videoHeight + bleedingArea;
-  //   drawOverlayImage(
-  //     dogLeft,
-  //     leftEarX - faceW * 0.75,
-  //     leftEarY + faceW * 0.25,
-  //     dogLeft.naturalWidth * 0.15 // Reduce size to 25%
-  //   );
-
-  //   // Position dogRight at the right ear (landmark 454)
-  //   const rightEar = lm[454];
-  //   const rightEarX = rightEar.x * video.videoWidth + bleedingArea;
-  //   const rightEarY = rightEar.y * video.videoHeight + bleedingArea;
-  //   drawOverlayImage(
-  //     dogRight,
-  //     rightEarX + faceW * 0.75,
-  //     rightEarY + faceW * 0.25,
-  //     dogRight.naturalWidth * 0.15 // Reduce size to 25%
-  //   );
-  // }
-
-  // Debug: inspect poseRes to see its shape
-  //console.log("poseRes →", poseRes);
-
-  // const rawPoseLandmarks =
-  //   (poseRes as any).landmarks ?? (poseRes as any).landmarks;
-
-  // if (Array.isArray(rawPoseLandmarks) && rawPoseLandmarks.length > 0) {
-  //   // const pl = rawPoseLandmarks[0];
-  //   // const ls = pl[11], rs = pl[12], le = pl[13], re = pl[14];
-  
-  //   // // ancho del overlay (15% del ancho del canvas)
-  //   // const overlayW = canvasElement.width * 0.15;
-  //   // // desplazamiento lateral mayor, para que queden bien afuera
-  //   // const offX = overlayW * -0.5;
-  
-  //   // // punto medio hombro–codo izquierdo
-  //   // const midLX = ((ls.x + le.x) / 2) * video.videoWidth  + bleedingArea;
-  //   // const midLY = ((ls.y + le.y) / 2) * video.videoHeight + bleedingArea;
-  //   // // mueve la imagen aún más hacia la izquierda (afuera del cuerpo)
-  //   // drawOverlayImage(perro101Image, midLX - offX, midLY, overlayW);
-  
-  //   // // punto medio hombro–codo derecho
-  //   // const midRX = ((rs.x + re.x) / 2) * video.videoWidth  + bleedingArea;
-  //   // const midRY = ((rs.y + re.y) / 2) * video.videoHeight + bleedingArea;
-  //   // // mueve la imagen aún más hacia la derecha (afuera del cuerpo)
-  //   // drawOverlayImage(m01Image, midRX + offX, midRY, overlayW);
-  // } else {
-  //   console.warn("❗ No se detectaron pose landmarks:", rawPoseLandmarks);
-  // }
 
   if (webcamRunning) {
     requestAnimationFrame(predict);
@@ -367,3 +358,6 @@ btn.addEventListener("click", () => {
 
 // lo añadimos a body (no a demosSection)
 document.body.appendChild(btn);
+
+// Initialize camera configuration logic
+setupCameraConfig(video, enableCam);
