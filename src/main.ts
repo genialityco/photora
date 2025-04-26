@@ -25,10 +25,10 @@ const canvasCtx = canvasElement.getContext("2d", { alpha: true })!;
 
 // State
 let faceLandmarker: FaceLandmarker;
-let poseLandmarker: PoseLandmarker;
+//let poseLandmarker: PoseLandmarker;
 let segmenter: ImageSegmenter;
 let webcamRunning = false;
-const videoWidth = window.innerWidth;
+const videoWidth = window.innerWidth/4;
 
 // Preload overlay images
 const crownImage = Object.assign(new Image(), { src: "/assets/CORONA.png" });
@@ -80,21 +80,22 @@ async function init() {
   });
 
   // PoseLandmarker (lite)
-  poseLandmarker = await PoseLandmarker.createFromOptions(resolver, {
-    baseOptions: {
-      modelAssetPath:
-        "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
-      delegate: "GPU",
-    },
-    runningMode: "VIDEO",
-    numPoses: 1,
-    outputSegmentationMasks: false,
-  });
+  // poseLandmarker = await PoseLandmarker.createFromOptions(resolver, {
+  //   baseOptions: {
+  //     modelAssetPath:
+  //       "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+  //     delegate: "GPU",
+  //   },
+  //   runningMode: "VIDEO",
+  //   numPoses: 1,
+  //   outputSegmentationMasks: false,
+  // });
+//    "https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite",
 
+let segmenterModelPath = "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite";
   segmenter = await ImageSegmenter.createFromOptions(resolver, {
     baseOptions: {
-      modelAssetPath:
-        "https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite",
+      modelAssetPath:segmenterModelPath,
     },
     runningMode: "VIDEO",
     outputCategoryMask: true,
@@ -149,6 +150,7 @@ async function predict() {
 
   canvasElement.width = video.videoWidth + bleedingArea * 2;
   canvasElement.height = video.videoHeight + bleedingArea;
+  
   canvasElement.style.width = `${
     parseInt(video.style.width) + bleedingArea * 2
   }px`;
@@ -198,87 +200,87 @@ async function predict() {
 
   // --- Continue with overlays ---
   const now = performance.now();
-  const faceRes = await faceLandmarker.detectForVideo(video, now);
-  const poseRes = await poseLandmarker.detectForVideo(video, now);
+  // const faceRes = await faceLandmarker.detectForVideo(video, now);
+  // //const poseRes = await poseLandmarker.detectForVideo(video, now);
 
-  // Draw crown + Maluma logo using face landmarks
-  if (faceRes.faceLandmarks?.length) {
-    const lm = faceRes.faceLandmarks[0];
-    const f = lm[10];
-    const wNorm = Math.abs(lm[234].x - lm[454].x);
-    const faceW = wNorm * video.videoWidth;
-    const crownW = faceW * 1.5;
-    const crownH =
-      crownW * (crownImage.naturalHeight / crownImage.naturalWidth);
-    const crownX = f.x * video.videoWidth - crownW / 2 + bleedingArea;
-    const crownY = f.y * video.videoHeight - crownH * 1.1 + bleedingArea;
-    canvasCtx.drawImage(crownImage, crownX, crownY, crownW, crownH);
-    drawOverlayImage(
-      malumaLogo,
-      crownX + crownW / 2,
-      crownY - crownH * 0.1,
-      crownW,
-      true
-    );
+  // // Draw crown + Maluma logo using face landmarks
+  // if (faceRes.faceLandmarks?.length) {
+  //   const lm = faceRes.faceLandmarks[0];
+  //   const f = lm[10];
+  //   const wNorm = Math.abs(lm[234].x - lm[454].x);
+  //   const faceW = wNorm * video.videoWidth;
+  //   const crownW = faceW * 1.5;
+  //   const crownH =
+  //     crownW * (crownImage.naturalHeight / crownImage.naturalWidth);
+  //   const crownX = f.x * video.videoWidth - crownW / 2 + bleedingArea;
+  //   const crownY = f.y * video.videoHeight - crownH * 1.1 + bleedingArea;
+  //   canvasCtx.drawImage(crownImage, crownX, crownY, crownW, crownH);
+  //   drawOverlayImage(
+  //     malumaLogo,
+  //     crownX + crownW / 2,
+  //     crownY - crownH * 0.1,
+  //     crownW,
+  //     true
+  //   );
 
-    // Position textDorado below the chin (landmark 152)
-    const chin = lm[152];
-    const chinX = chin.x * video.videoWidth + bleedingArea;
-    const chinY = chin.y * video.videoHeight + bleedingArea;
-    drawOverlayImage(textDorado, chinX, chinY + faceW * 0.5, crownW, true);
+  //   // Position textDorado below the chin (landmark 152)
+  //   const chin = lm[152];
+  //   const chinX = chin.x * video.videoWidth + bleedingArea;
+  //   const chinY = chin.y * video.videoHeight + bleedingArea;
+  //   drawOverlayImage(textDorado, chinX, chinY + faceW * 0.5, crownW, true);
 
-    // Position dogLeft at the left ear (landmark 234)
-    const leftEar = lm[234];
-    const leftEarX = leftEar.x * video.videoWidth + bleedingArea;
-    const leftEarY = leftEar.y * video.videoHeight + bleedingArea;
-    drawOverlayImage(
-      dogLeft,
-      leftEarX - faceW * 0.75,
-      leftEarY + faceW * 0.25,
-      dogLeft.naturalWidth * 0.15 // Reduce size to 25%
-    );
+  //   // Position dogLeft at the left ear (landmark 234)
+  //   const leftEar = lm[234];
+  //   const leftEarX = leftEar.x * video.videoWidth + bleedingArea;
+  //   const leftEarY = leftEar.y * video.videoHeight + bleedingArea;
+  //   drawOverlayImage(
+  //     dogLeft,
+  //     leftEarX - faceW * 0.75,
+  //     leftEarY + faceW * 0.25,
+  //     dogLeft.naturalWidth * 0.15 // Reduce size to 25%
+  //   );
 
-    // Position dogRight at the right ear (landmark 454)
-    const rightEar = lm[454];
-    const rightEarX = rightEar.x * video.videoWidth + bleedingArea;
-    const rightEarY = rightEar.y * video.videoHeight + bleedingArea;
-    drawOverlayImage(
-      dogRight,
-      rightEarX + faceW * 0.75,
-      rightEarY + faceW * 0.25,
-      dogRight.naturalWidth * 0.15 // Reduce size to 25%
-    );
-  }
+  //   // Position dogRight at the right ear (landmark 454)
+  //   const rightEar = lm[454];
+  //   const rightEarX = rightEar.x * video.videoWidth + bleedingArea;
+  //   const rightEarY = rightEar.y * video.videoHeight + bleedingArea;
+  //   drawOverlayImage(
+  //     dogRight,
+  //     rightEarX + faceW * 0.75,
+  //     rightEarY + faceW * 0.25,
+  //     dogRight.naturalWidth * 0.15 // Reduce size to 25%
+  //   );
+  // }
 
   // Debug: inspect poseRes to see its shape
   //console.log("poseRes →", poseRes);
 
-  const rawPoseLandmarks =
-    (poseRes as any).landmarks ?? (poseRes as any).landmarks;
+  // const rawPoseLandmarks =
+  //   (poseRes as any).landmarks ?? (poseRes as any).landmarks;
 
-  if (Array.isArray(rawPoseLandmarks) && rawPoseLandmarks.length > 0) {
-    // const pl = rawPoseLandmarks[0];
-    // const ls = pl[11], rs = pl[12], le = pl[13], re = pl[14];
+  // if (Array.isArray(rawPoseLandmarks) && rawPoseLandmarks.length > 0) {
+  //   // const pl = rawPoseLandmarks[0];
+  //   // const ls = pl[11], rs = pl[12], le = pl[13], re = pl[14];
   
-    // // ancho del overlay (15% del ancho del canvas)
-    // const overlayW = canvasElement.width * 0.15;
-    // // desplazamiento lateral mayor, para que queden bien afuera
-    // const offX = overlayW * -0.5;
+  //   // // ancho del overlay (15% del ancho del canvas)
+  //   // const overlayW = canvasElement.width * 0.15;
+  //   // // desplazamiento lateral mayor, para que queden bien afuera
+  //   // const offX = overlayW * -0.5;
   
-    // // punto medio hombro–codo izquierdo
-    // const midLX = ((ls.x + le.x) / 2) * video.videoWidth  + bleedingArea;
-    // const midLY = ((ls.y + le.y) / 2) * video.videoHeight + bleedingArea;
-    // // mueve la imagen aún más hacia la izquierda (afuera del cuerpo)
-    // drawOverlayImage(perro101Image, midLX - offX, midLY, overlayW);
+  //   // // punto medio hombro–codo izquierdo
+  //   // const midLX = ((ls.x + le.x) / 2) * video.videoWidth  + bleedingArea;
+  //   // const midLY = ((ls.y + le.y) / 2) * video.videoHeight + bleedingArea;
+  //   // // mueve la imagen aún más hacia la izquierda (afuera del cuerpo)
+  //   // drawOverlayImage(perro101Image, midLX - offX, midLY, overlayW);
   
-    // // punto medio hombro–codo derecho
-    // const midRX = ((rs.x + re.x) / 2) * video.videoWidth  + bleedingArea;
-    // const midRY = ((rs.y + re.y) / 2) * video.videoHeight + bleedingArea;
-    // // mueve la imagen aún más hacia la derecha (afuera del cuerpo)
-    // drawOverlayImage(m01Image, midRX + offX, midRY, overlayW);
-  } else {
-    console.warn("❗ No se detectaron pose landmarks:", rawPoseLandmarks);
-  }
+  //   // // punto medio hombro–codo derecho
+  //   // const midRX = ((rs.x + re.x) / 2) * video.videoWidth  + bleedingArea;
+  //   // const midRY = ((rs.y + re.y) / 2) * video.videoHeight + bleedingArea;
+  //   // // mueve la imagen aún más hacia la derecha (afuera del cuerpo)
+  //   // drawOverlayImage(m01Image, midRX + offX, midRY, overlayW);
+  // } else {
+  //   console.warn("❗ No se detectaron pose landmarks:", rawPoseLandmarks);
+  // }
 
   if (webcamRunning) {
     requestAnimationFrame(predict);
