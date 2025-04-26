@@ -2,7 +2,6 @@ import {
   ImageSegmenter,
   FilesetResolver,
   FaceLandmarker,
-  PoseLandmarker,
 } from "@mediapipe/tasks-vision";
 import {
   ref as storageRef,
