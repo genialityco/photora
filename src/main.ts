@@ -64,9 +64,8 @@ function drawOverlayImage(
 }
 
 async function init() {
-  const resolver = await FilesetResolver.forVisionTasks(
-    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
-  );
+  // "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+  const resolver = await FilesetResolver.forVisionTasks('/wasm');
 
   // FaceLandmarker
   faceLandmarker = await FaceLandmarker.createFromOptions(resolver, {
