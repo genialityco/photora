@@ -300,8 +300,8 @@ async function captureAndUpload() {
       ignoreElements: (el) => {
         return (
           el.id === "loading-overlay" ||
-          el.classList.contains("capture-btn")
-        );
+          el.classList.contains("capture-btn") ||
+          el.classList.contains("back-btn"))
       },
     });
 
