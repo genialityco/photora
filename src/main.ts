@@ -124,9 +124,9 @@ document.body.appendChild(modal);
 modal
   .querySelector(".close-btn")!
   .addEventListener("click", () => (modal.style.display = "none"));
-modal.addEventListener("click", (e) => {
-  if (e.target === modal) modal.style.display = "none";
-});
+// modal.addEventListener("click", (e) => {
+//   if (e.target === modal) modal.style.display = "none";
+// });
 
 init();
 
