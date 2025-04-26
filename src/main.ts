@@ -254,9 +254,9 @@ async function predict() {
       const leftEarY = leftEar.y * video.videoHeight + bleedingArea;
       drawOverlayImage(
         dogLeft,
-        leftEarX - faceW * 0.75,
+        leftEarX - faceW * 0.65,
         leftEarY + faceW * 0.25,
-        dogLeft.naturalWidth * 0.15
+        dogLeft.naturalWidth * 0.7
       );
 
       const rightEar = lm[454];
@@ -264,9 +264,9 @@ async function predict() {
       const rightEarY = rightEar.y * video.videoHeight + bleedingArea;
       drawOverlayImage(
         dogRight,
-        rightEarX + faceW * 0.75,
+        rightEarX + faceW * 0.45,
         rightEarY + faceW * 0.25,
-        dogRight.naturalWidth * 0.15
+        dogRight.naturalWidth * 0.7
       );
     }
   } catch (err) {
