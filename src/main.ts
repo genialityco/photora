@@ -183,8 +183,8 @@ async function predict() {
 
   // Resize to square based on height
   const ratio = video.videoHeight / video.videoWidth;
-  video.style.width = `${videoWidth}px`;
-  video.style.height = `${videoWidth * ratio}px`;
+  video.style.width = `${videoWidth/3}px`;
+  video.style.height = `${videoWidth/3 * ratio}px`;
 
   canvasElement.width = video.videoWidth + bleedingArea * 2;
   canvasElement.height = video.videoHeight + bleedingArea;
