@@ -60,7 +60,7 @@ body {
   top: 20px;
   left: 50%;
   transform: translateX(-50%);
-  width: 200px;   /* ajústalo a tu gusto */
+  width: 300px;   /* ajústalo a tu gusto */
   height: auto;
 }
 

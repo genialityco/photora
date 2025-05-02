@@ -7,13 +7,12 @@ import {
   ref as storageRef,
   uploadString,
   getDownloadURL,
-  updateMetadata
+  updateMetadata,
 } from "firebase/storage";
 import { storage } from "./firebaseConfig";
 import QRCode from "qrcode";
 import html2canvas from "html2canvas";
 import { setupCameraConfig } from "./cameraConfig";
-
 
 // DOM elements
 const demosSection = document.getElementById("demos")! as HTMLElement;
@@ -31,17 +30,13 @@ let webcamRunning = false;
 const videoWidth = window.innerWidth;
 
 // Preload overlay images
-const crownImage = Object.assign(new Image(), { src: "/assets/CORONA.png" });
-const malumaLogo = Object.assign(new Image(), {
-  src: "/assets/LOGO-MALUMA.png",
-});
-const dogLeft = Object.assign(new Image(), { src: "/assets/PERRO 201.png" });
-const dogRight = Object.assign(new Image(), { src: "/assets/PERRO 303.png" });
+const crownImage = Object.assign(new Image(), { src: "/assets/SOL.png" });
+const raspadoImage = Object.assign(new Image(), { src: "/assets/RASPAO.png" });
+const dogLeft = Object.assign(new Image(), { src: "/assets/gorda.png" });
+const dogRight = Object.assign(new Image(), { src: "/assets/NUBE.png" });
 const textDorado = Object.assign(new Image(), {
-  src: "/assets/TEXTO-DORADO.png",
+  src: "/assets/LOGO-LA-SOLAR.png",
 });
-// const m01Image     = Object.assign(new Image(), { src: "/assets/M 01.png" });
-// const perro101Image = Object.assign(new Image(), { src: "/assets/PERRO 101.png" });
 
 // Utility to draw an image centered at (cx, cy) with given width, preserving aspect
 function drawOverlayImage(
@@ -65,7 +60,7 @@ function drawOverlayImage(
 
 async function init() {
   // "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
-  const resolver = await FilesetResolver.forVisionTasks('/wasm');
+  const resolver = await FilesetResolver.forVisionTasks("/wasm");
 
   // FaceLandmarker
   faceLandmarker = await FaceLandmarker.createFromOptions(resolver, {
@@ -90,12 +85,13 @@ async function init() {
   //   numPoses: 1,
   //   outputSegmentationMasks: false,
   // });
-//    "https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite",
+  //    "https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite",
 
-let segmenterModelPath = "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite";
+  let segmenterModelPath =
+    "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite";
   segmenter = await ImageSegmenter.createFromOptions(resolver, {
     baseOptions: {
-      modelAssetPath:segmenterModelPath,
+      modelAssetPath: segmenterModelPath,
     },
     runningMode: "VIDEO",
     outputCategoryMask: true,
@@ -119,7 +115,6 @@ modal.innerHTML = `
 `;
 document.body.appendChild(modal);
 
-
 // Cerrar modal al hacer click en la “X” o fuera del contenido
 modal
   .querySelector(".close-btn")!
@@ -137,19 +132,24 @@ function enableCam(deviceId?: string) {
   }
 
   const constraints: MediaStreamConstraints = {
-    video: deviceId ? { deviceId: { exact: deviceId }, width: 1280, height: 720 } : { width: 1280, height: 720 },
+    video: deviceId
+      ? { deviceId: { exact: deviceId }, width: 1280, height: 720 }
+      : { width: 1280, height: 720 },
   };
 
-  navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
-    video.srcObject = stream;
-    video.onloadedmetadata = () => {
-      video.play();
-      webcamRunning = true; // Restart the prediction loop
-      requestAnimationFrame(predict);
-    };
-  }).catch((err) => {
-    console.error("Error accessing webcam:", err);
-  });
+  navigator.mediaDevices
+    .getUserMedia(constraints)
+    .then((stream) => {
+      video.srcObject = stream;
+      video.onloadedmetadata = () => {
+        video.play();
+        webcamRunning = true; // Restart the prediction loop
+        requestAnimationFrame(predict);
+      };
+    })
+    .catch((err) => {
+      console.error("Error accessing webcam:", err);
+    });
 }
 
 let lastVideoTime = -1;
@@ -203,21 +203,9 @@ async function predict() {
 
     const mask = segResult.categoryMask;
     if (mask) {
-      const maskData = mask.getAsUint8Array(); // 0 = background, 15 = person, etc.
-
-      // Use offscreen canvas for processing
-      const frame = processOffscreen(video);
-
-      for (let i = 0; i < maskData.length; i++) {
-        const segValue = maskData[i];
-        const j = i * 4;
-        if (segValue === 0) {
-          // background: set to transparent
-          frame.data[j + 3] = 0; // Alpha channel (transparency)
-        }
-      }
+      // Skip processing the mask to leave the silhouette
       canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-      canvasCtx.putImageData(frame, bleedingArea, bleedingArea);
+      canvasCtx.drawImage(video, bleedingArea, bleedingArea);
     }
 
     // --- Continue with overlays ---
@@ -234,13 +222,12 @@ async function predict() {
         crownW * (crownImage.naturalHeight / crownImage.naturalWidth);
       const crownX = f.x * video.videoWidth - crownW / 2 + bleedingArea;
       const crownY = f.y * video.videoHeight - crownH * 1.1 + bleedingArea;
-      canvasCtx.drawImage(crownImage, crownX, crownY, crownW, crownH);
-      drawOverlayImage(
-        malumaLogo,
-        crownX + crownW / 2,
-        crownY - crownH * 0.1,
+      canvasCtx.drawImage(
+        crownImage,
+        crownX + 200,
+        crownY + 100,
         crownW,
-        true
+        crownH
       );
 
       const chin = lm[152];
@@ -251,11 +238,33 @@ async function predict() {
       const leftEar = lm[234];
       const leftEarX = leftEar.x * video.videoWidth + bleedingArea;
       const leftEarY = leftEar.y * video.videoHeight + bleedingArea;
-      drawOverlayImage(
+      const dogLeftWidth = dogLeft.naturalWidth * 0.1;
+
+      canvasCtx.save();
+      canvasCtx.translate(leftEarX - faceW * 0.65, leftEarY + faceW * 0.25);
+      canvasCtx.rotate((15 * Math.PI) / 180); // Rotate by -15 degrees
+      canvasCtx.drawImage(
         dogLeft,
-        leftEarX - faceW * 0.65,
-        leftEarY + faceW * 0.25,
-        dogLeft.naturalWidth * 0.7
+        -dogLeftWidth / 2,
+        -dogLeftWidth / 2,
+        dogLeftWidth,
+        dogLeftWidth
+      );
+      canvasCtx.restore();
+
+      // Draw the raspado image above the dogLeft image
+      const raspadoW = dogLeftWidth * 1;
+      const raspadoH =
+        raspadoW * (raspadoImage.naturalHeight / raspadoImage.naturalWidth);
+      const raspadoX = leftEarX - faceW * 0.65;
+      const raspadoY = leftEarY + faceW * 0.25 - raspadoH * 0.8;
+
+      canvasCtx.drawImage(
+        raspadoImage,
+        raspadoX - 80,
+        raspadoY - 200,
+        raspadoW,
+        raspadoH
       );
 
       const rightEar = lm[454];
@@ -263,9 +272,9 @@ async function predict() {
       const rightEarY = rightEar.y * video.videoHeight + bleedingArea;
       drawOverlayImage(
         dogRight,
-        rightEarX + faceW * 0.45,
+        rightEarX + faceW * 0.7,
         rightEarY + faceW * 0.25,
-        dogRight.naturalWidth * 0.7
+        dogRight.naturalWidth * 0.25
       );
     }
   } catch (err) {
@@ -282,7 +291,7 @@ async function captureAndUpload() {
 
   // 1) Muestra el spinner
   overlay.classList.add("visible");
-  
+
   try {
     // 2) Captura TODO el <body> pero excluye spinner y botón
     const area = document.getElementById("capture-area")!;
@@ -293,12 +302,13 @@ async function captureAndUpload() {
         return (
           el.id === "loading-overlay" ||
           el.classList.contains("capture-btn") ||
-          el.classList.contains("back-btn"))
+          el.classList.contains("back-btn")
+        );
       },
     });
 
     const dataUrl = screenshot.toDataURL("image/png");
-    const ref     = storageRef(storage, `snapshots/scene_${Date.now()}.png`);
+    const ref = storageRef(storage, `snapshots/scene_${Date.now()}.png`);
 
     // 3) Súbelo y fuerza descarga
     await uploadString(ref, dataUrl, "data_url");
@@ -309,7 +319,6 @@ async function captureAndUpload() {
 
     // 4) Muestra el modal con la imagen y el QR
     showModal(url);
-
   } catch (err) {
     console.error(err);
   } finally {
@@ -318,26 +327,25 @@ async function captureAndUpload() {
   }
 }
 
-
 function showModal(url: string) {
   const img = document.getElementById("preview-img") as HTMLImageElement;
   img.src = url;
 
   const qrDiv = document.getElementById("qr-code")!;
-  qrDiv.innerHTML = "";     // limpia contenido anterior
+  qrDiv.innerHTML = ""; // limpia contenido anterior
 
   // 1) Crea un canvas dentro de qrDiv
   const canvas = document.createElement("canvas");
   qrDiv.appendChild(canvas);
 
   // 2) Genera el QR en ese canvas
-  QRCode.toCanvas(canvas, url, { width: 200 })
-    .catch(err => console.error("Error generando QR:", err));
+  QRCode.toCanvas(canvas, url, { width: 200 }).catch((err) =>
+    console.error("Error generando QR:", err)
+  );
 
   // 3) Muestra el modal
   modal.style.display = "flex";
 }
-
 
 // Desactivar eventos en video/canvas
 video.style.pointerEvents = "none";
