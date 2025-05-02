@@ -38,6 +38,16 @@ const textDorado = Object.assign(new Image(), {
   src: "/assets/LOGO-LA-SOLAR.png",
 });
 
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+
 // Utility to draw an image centered at (cx, cy) with given width, preserving aspect
 function drawOverlayImage(
   img: HTMLImageElement,
@@ -325,17 +335,29 @@ async function captureAndUpload() {
       },
     });
 
-    const dataUrl = screenshot.toDataURL("image/png");
-    const ref = storageRef(storage, `snapshots/scene_${Date.now()}.png`);
+    const ref = storageRef(storage, `snapshots/scene_${Date.now()}.jpg`);
 
-    // Upload and force download
-    await uploadString(ref, dataUrl, "data_url");
+    // Convertimos el canvas a Blob (JPEG con calidad 0.8)
+    const blob: Blob | null = await new Promise((resolve) =>
+      screenshot.toBlob((b) => resolve(b), "image/jpeg", 0.8)
+    );
+
+    if (!blob) throw new Error("No se pudo convertir a blob.");
+
+    // Verificamos el tamaño (máx 500 KB)
+    if (blob.size > 500 * 1024) {
+      throw new Error(
+        "Imagen demasiado grande. Ajusta la calidad o el área capturada."
+      );
+    }
+
+    // Subimos el blob directamente
+    await uploadString(ref, await blobToBase64(blob), "data_url");
+
     await updateMetadata(ref, {
-      contentDisposition: 'attachment; filename="snapshot.png"',
+      contentDisposition: 'attachment; filename="snapshot.jpg"',
     });
     const url = await getDownloadURL(ref);
-
-    // Show the modal with the image and QR
     showModal(url);
   } catch (err) {
     console.error(err);
