@@ -288,12 +288,30 @@ async function predict() {
 
 async function captureAndUpload() {
   const overlay = document.getElementById("loading-overlay")!;
+  const countdownElement = document.createElement("div");
+  countdownElement.id = "countdown";
+  countdownElement.style.position = "absolute";
+  countdownElement.style.top = "10%";
+  countdownElement.style.right = "20%";
+  countdownElement.style.transform = "translate(-50%, -50%)";
+  countdownElement.style.fontSize = "5rem";
+  countdownElement.style.color = "white";
+  countdownElement.style.zIndex = "1000";
+  countdownElement.style.textAlign = "center";
+  document.body.appendChild(countdownElement);
 
-  // 1) Muestra el spinner
+  // Countdown logic
+  for (let i = 3; i > 0; i--) {
+    countdownElement.textContent = i.toString();
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  countdownElement.remove();
+
+  // Show the spinner overlay
   overlay.classList.add("visible");
 
   try {
-    // 2) Captura TODO el <body> pero excluye spinner y botón
+    // Capture the area excluding spinner and button
     const area = document.getElementById("capture-area")!;
 
     const screenshot = await html2canvas(area, {
@@ -310,19 +328,19 @@ async function captureAndUpload() {
     const dataUrl = screenshot.toDataURL("image/png");
     const ref = storageRef(storage, `snapshots/scene_${Date.now()}.png`);
 
-    // 3) Súbelo y fuerza descarga
+    // Upload and force download
     await uploadString(ref, dataUrl, "data_url");
     await updateMetadata(ref, {
       contentDisposition: 'attachment; filename="snapshot.png"',
     });
     const url = await getDownloadURL(ref);
 
-    // 4) Muestra el modal con la imagen y el QR
+    // Show the modal with the image and QR
     showModal(url);
   } catch (err) {
     console.error(err);
   } finally {
-    // 5) Oculta el spinner y regresa el botón a su estado normal
+    // Hide the spinner overlay
     overlay.classList.remove("visible");
   }
 }
